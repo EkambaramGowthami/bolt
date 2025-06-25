@@ -1,6 +1,6 @@
 export const Free = () =>{
     return (
-        <div className="w-[480px] h-[500px] shadow-2xl border border-gray-700 rounded-lg">
+        <div className="md:w-1/3 sm:w-full h-[500px] shadow-2xl border border-gray-700 rounded-lg mr-4">
             <div className="p-8">
                 <p className="text-white text-2xl font-medium">Free</p>
                 <p className="text-white font-light text-sm">Explore core features at no cost — perfect for light, personal projects.</p>

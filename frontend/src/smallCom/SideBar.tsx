@@ -31,7 +31,7 @@ export const SideBar = ({ hover, setHover, username,setgetToken}:any) => {
         //setUsername(null);
       };
     return (
-        <div className="w-80 min-h-screen shadow-lg border border-gray-500 focus border:none rounded-xl fixed  h-full w-80 bg-black text-white p-4 z-30 transition-all" onMouseLeave={() => setHover(false)}>
+        <div className="w-80 min-h-screen shadow-lg border border-gray-500 focus border:none rounded-xl" onMouseLeave={() => setHover(false)}>
             <div className="p-4">
                 <div className="mt-6 text-white"><input type="text" placeholder="Start a new chat" className="bg-sky-400 bg-opacity-30   px-2 py-2 rounded placeholder:text-blue-500 hover:bg-opacity-40"  onClick={() => {window.location.reload()}}/>
                 </div>

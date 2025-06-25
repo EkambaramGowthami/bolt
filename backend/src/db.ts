@@ -1,12 +1,14 @@
 import { timeStamp } from "console";
+import dotenv from "dotenv";
+dotenv.config();
 import mongoose from "mongoose";
-const mongoUrl = process.env.MONGOOSE_URL;
+// const mongoUrl = (process.env.MONGOOSE_URL) as string;
 
-if (!mongoUrl) {
-  throw new Error("MONGODB connection string is missing in .env");
-}
+// if (!mongoUrl) {
+//   throw new Error("MONGODB connection string is missing in .env");
+// }
 
-mongoose.connect(mongoUrl);
+mongoose.connect(process.env.MONGOOSE_URL as string);
 import { z } from "zod";
 
 export const zodvalidationSchema = z.object({

@@ -12,10 +12,36 @@ import {
 } from "../preview";
 import { Copy } from "lucide-react";
 
-
+const knownTechnologies = [
+  "html", "css", "javascript", "react", "vue", "angular",
+  "tailwind", "bootstrap", "node", "express", "mongodb",
+  "next", "java", "python", "typescript"
+];
 
 export const SearchElement = () => {
-  const language="react";
+function extractOf(promptHistory:any){
+  const fullPrompt = promptHistory.join("\n");
+  const lowerPrompt = fullPrompt.toLowerCase();
+  return knownTechnologies.filter(tech => lowerPrompt.includes(tech));
+
+}
+function getPrimaryLanguage(techs: string[]): string {
+  const set = new Set(techs);
+
+  if (set.has("html") && set.has("css") && set.has("javascript")) {
+    return "html";
+  }
+
+  const priority = ["react", "vue", "angular", "javascript", "html", "java"];
+  for (const lang of priority) {
+    if (set.has(lang)) return lang;
+  }
+
+  return techs[0] || "html";
+}
+
+
+  
   
   const promptRef = useRef();
   let { prompt: initialPrompt } = useParams();
@@ -30,8 +56,11 @@ export const SearchElement = () => {
 
 
 
+
     const fetchData = async (combinedPrompt:any) => {
       try {
+        const techs=extractOf([combinedPrompt]);
+        const language = getPrimaryLanguage(techs);
         const res = await axios.post("http://localhost:3000/template", { prompt: combinedPrompt, language });
         setData(res.data);
 
@@ -156,7 +185,7 @@ export const SearchElement = () => {
               srcDoc={pre}
               title="Preview"
               className="w-full h-full border rounded "
-              sandbox="allow-scripts"
+              sandbox="allow-scripts allow-same-origin"
             >
               Your browser does not support iframes.
             </iframe>

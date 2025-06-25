@@ -4,8 +4,14 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.transactionModel = exports.tokenModel = exports.userModel = exports.zodvalidationSchema = void 0;
+const dotenv_1 = __importDefault(require("dotenv"));
+dotenv_1.default.config();
 const mongoose_1 = __importDefault(require("mongoose"));
-mongoose_1.default.connect("mongodb+srv://username:ZMtJx4JSx*dMa.c@cluster0.cas0l.mongodb.net/bolt-database");
+// const mongoUrl = (process.env.MONGOOSE_URL) as string;
+// if (!mongoUrl) {
+//   throw new Error("MONGODB connection string is missing in .env");
+// }
+mongoose_1.default.connect(process.env.MONGOOSE_URL);
 const zod_1 = require("zod");
 exports.zodvalidationSchema = zod_1.z.object({
     username: zod_1.z.string().min(3, "username must be atleast 3 characters"),

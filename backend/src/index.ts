@@ -11,12 +11,11 @@ import { authmeddleware } from "./middlewares/authmiddleware";
 import { error } from "console";
 const SECRETE = (process.env.SECRETE || "defaultsecrete") as string;
 function extractExplanationAndRequirements(text: string) {
-  const explanationEnd = text.indexOf("```"); // start of first code block
+  const explanationEnd = text.indexOf("```");
   const explanationText = explanationEnd !== -1 ? text.slice(0, explanationEnd).trim() : text.trim();
 
   const requirements: string[] = [];
 
-  // Try to find lines that look like requirements
   const lines = explanationText.split("\n");
   for (const line of lines) {
     if (
@@ -34,7 +33,6 @@ function extractExplanationAndRequirements(text: string) {
     }
   }
 
-  // Remove requirement lines from explanation
   const filteredExplanation = lines
     .filter((line) => !requirements.includes(line.trim()))
     .join("\n")
@@ -80,13 +78,34 @@ app.post("/template", async (req:any, res:any) => {
     const text = await response.text();
     console.log("Generated Text:\n", text);
     const { explanation, requirements } = extractExplanationAndRequirements(text);
+    const extensionMap: { [key: string]: string } = {
+      javascript: "js",
+      js: "js",
+      jsx: "jsx",
+      tsx: "tsx",
+      typescript: "ts",
+      html: "html",
+      css: "css",
+      json: "json",
+      java: "java",
+      python: "py",
+      text: "txt",
+      react: "jsx",
+      vue: "vue",
+    };
     const codeBlocks = Array.from(
       text.matchAll(/```(?:(\w+)\n)?([\s\S]*?)```/g)
-    ).map(([, lang, code], index) => ({
-      name: `file${index + 1}.${lang || "txt"}`,
-      lang: lang || "text",
-      code: code.trim(),
-    }));
+    ).map((match, index) => {
+      const rawLang = match[1];
+      const code = match[2].trim();
+      const lang = rawLang ? rawLang.toLowerCase() : "text";
+      const extension  = extensionMap[lang.toLowerCase()] || "txt";
+      return {
+        name: `file${index + 1}.${extension}`,
+        lang,
+        code,
+      };
+    });
 
     
 
@@ -108,7 +127,7 @@ app.post("/referral/:userId", async (req:any, res:any) => {
     const tokens = await tokenModel.findOne({ userId });
     if (!tokens) return res.status(404).json({ error: "User token not found" });
 
-    // 1. Assign unique referral code if not already assigned
+   
     if (!tokens.referralCode) {
       let uniqueCode;
       do {
@@ -117,7 +136,7 @@ app.post("/referral/:userId", async (req:any, res:any) => {
       tokens.referralCode = uniqueCode;
     }
 
-    // 2. Avoid self-referral or duplicate referral
+ 
     if (
       referredBy &&
       referredBy !== tokens.referralCode &&

@@ -24,7 +24,7 @@ export const Teams = ({ on }: any) => {
         console.log(response.data.tokens);
     }
     return (
-        <div className="w-[480px] h-[500px] border border-gray-700 shadow-lg rounded-lg">
+        <div className="md:w-1/3 sm:w-full h-[500px] border border-gray-700 shadow-lg rounded-lg">
             <div className="p-8">
                 <div className="flex justify-center items-center gap-2">
                     <div className="text-2xl text-white font-semibold">Teams</div>

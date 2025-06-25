@@ -55,7 +55,7 @@ export const Pricing = () => {
                         </div>
                      </div>
                 </div>
-                <div className="text-white mt-2 flex gap-4">
+                <div className="text-white mt-2 flex flex-col sm:flex-col md:flex-row gap-4">
                     <Free />
                     <Pro on={on} />
                     <Teams on={on} />

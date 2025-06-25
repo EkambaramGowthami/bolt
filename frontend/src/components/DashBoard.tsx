@@ -47,14 +47,12 @@ export const Dashboard = () => {
   
     return (
       <div className="flex flex-col min-h-screen bg-black">
-      
+       
         <div className="fixed top-0 left-0 w-full bg-white shadow-md z-50">
           <NavBar setSignupButton={setSignupButton} setSigninButton={setSigninButton} setCom={setCom} username={username}  />
         </div>
-        
-  
         {/* Sidebar */}
-        <div className="fixed left-0 text-white z-40">
+       <div className="fixed left-0 text-white z-40 top-0">
           {hover && (
             <SideBar
               hover={hover}
@@ -64,6 +62,8 @@ export const Dashboard = () => {
             />
           )}
         </div>
+  
+       
   
         {/* Main content */}
         <div className="flex items-center justify-center w-screen min-h-screen bg-black pt-24">
