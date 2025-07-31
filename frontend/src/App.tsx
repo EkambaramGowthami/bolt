@@ -4,6 +4,8 @@ import { NavBar } from './smallCom/NavBar'
 import { Dashboard } from './components/DashBoard'
 import { SearchElement } from './components/SearchElement'
 import { Pricing } from './components/Pricing'
+import { Signup } from './smallCom/signup'
+import { Signin } from './smallCom/Signin'
 
 function App() {
   
@@ -13,9 +15,10 @@ function App() {
     
       
           <Route path="/dashboard" element={<Dashboard />} />
-        
+          <Route path="/login" element={<Signin />} />
+          <Route path="/signup" element={<Signup />} />
          <Route path="/search/:prompt" element={<SearchElement />} /> 
-         <Route path="/pricing/:username" element={<Pricing />} />
+         <Route path="/dashboard/pricing" element={<Pricing />} />
          
 
         

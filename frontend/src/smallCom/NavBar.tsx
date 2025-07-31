@@ -1,36 +1,24 @@
-import { ChevronDown,ChevronUp } from 'lucide-react';
-import { useState } from 'react';
-import { Navigate, useNavigate } from 'react-router-dom';
+import { useNavigate } from "react-router-dom"
 
-export const NavBar = ({setSignupButton,setSigninButton,setCom,username}:any) =>{
-   
-    const navigate=useNavigate();
-    const [clickR,setClickR]=useState(false);
-    const handlePricing = (e) =>{
-        e.preventDefault();
-        navigate(`/pricing/${encodeURIComponent(username)}`);
-    }
-    const handleCom = (e) =>{
-        e.preventDefault();
-        setCom(true);
-        
-    }
-    
-    return (
-        <nav className="flex justify-between bg-black">
-            <div className="italic text-3xl ml-4 font-bold text-white">bolt</div>
-            <div className="hidden md:flex text-lg font-light text-gray-500 space-x-6 items-center gap-6">
-                <a href="/" className='hover:text-white ' onClick={handleCom}>Community</a>
-                {/* <div className="flex items-center hover:text-white ">
-                    <a href="/" onClick={() => setClickR(true)} onMouseLeave={()=>setClickR(false)}>Resources</a>
-                    <span>{clickR ? <ChevronUp/>  : <ChevronDown />}</span>
-                </div> */}
-                <a href="/" className='hover:text-white' onClick={handlePricing}>Pricing</a>
-            </div>
-            <div className='mr-8'>
-                <button className='text-white px-6 py-1 top-2 rounded bg-blue-500 mr-4' onClick={()=>setSignupButton(true)}>signup</button>
-                <button className='text-white px-6 py-1 top=2 rounded border border-blue-500 ' onClick={()=>setSigninButton(true)}>signin</button>
-            </div>
-        </nav>
-    )
+export const NavBar = ()=>{
+  const navigate=useNavigate();
+  return <div className="relative top-6 left-0 bg-black w-full">
+    <nav className="flex text-white items-center">
+       <div className="absolute left-6 text-3xl font-medium p-4">
+        Zentra
+        </div>
+      <div className="w-full text-gray-500 absolute left-[520px] text-center flex space-x-4 text-md font-light">
+        <span className="hover:text-white" onClick={()=>navigate("/dashboard/pricing")}>Pricing</span>
+        <span className="hover:text-white">Features</span>
+        <span className="hover:text-white" onClick={()=>window.location.reload()}>Start a new chart</span>
+      </div>
+      <div className="absolute right-12 flex space-x-4">
+        <button className="text-md hover:bg-[#333333] bg-opacity-50 px-2 py-1 rounded" onClick={()=>navigate("/login")}>Login</button>
+        <button className="bg-white rounded-lg text-md px-4 py-1 text-black" onClick={()=>navigate("/signup")}>Signup</button>
+
+      </div>
+
+    </nav>
+
+  </div>
 }

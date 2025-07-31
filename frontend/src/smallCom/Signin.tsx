@@ -35,8 +35,9 @@ export const Signin = ({setSigninButton,setUsername}:any) =>{
         
     }
     return (
-        <div className="text-center rounded-lg shadow-lg p-6 shadow-lg shadow-blue-500" onMouseLeave={()=>setSigninButton(false)}>
-            <div className="flex justify-center items-center font-md text-3xl text-blue-500">
+        <div className="w-screen h-screen bg-[#0E0E10] flex flex-col justify-center items-center text-center " >
+            <div onMouseLeave={()=>setSigninButton(false)} className="bg-[#333333] bg-opacity-50 rounded-lg shadow-lg  p-4 space-y-4">
+            <div className="flex justify-center items-center font-md text-3xl text-white">
                 Signin
             </div>
             <div className="space-y-3 p-4">
@@ -44,12 +45,15 @@ export const Signin = ({setSigninButton,setUsername}:any) =>{
                <div><input type="text" placeholder="email" className="px-12 py-2 rounded" ref={emailRef} /></div>
                <div><input type="text" placeholder="password" className="px-12 py-2 rounded"  ref={passwordRef} /></div>
                <div className="text-center text-red-500 font-normal text-md">{error && <div>Invalide credentials,try again</div>}</div>
-               <div><button className="bg-blue-500 text-white font-md px-4 py-2 rounded" onClick={handleOnClick}  >Submit</button></div>
+               <div><button className="bg-blue-500 text-white font-md px-4 py-2 rounded" onClick={handleOnClick}  >Signin</button></div>
                 
                 
                 
 
             </div>
+
+            </div>
+            
 
         </div>
     )

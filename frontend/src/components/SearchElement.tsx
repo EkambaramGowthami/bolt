@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import axios from "axios";
 import { useParams } from "react-router-dom";
-import { Send } from "../symbols/Send"
+import { Send } from "../symbols/Send";
 import {
   generateHtmlPreview,
   generateCSSPreview,
@@ -43,7 +43,7 @@ function getPrimaryLanguage(techs: string[]): string {
 
   
   
-  const promptRef = useRef();
+  const promptRef = useRef<HTMLInputElement>(null);
   let { prompt: initialPrompt } = useParams();
   const [promptInput,setPromptInput] = useState("");
   const [promptHistory,setPromptHistory] = useState([initialPrompt]);
@@ -58,12 +58,14 @@ function getPrimaryLanguage(techs: string[]): string {
 
 
     const fetchData = async (combinedPrompt:any) => {
+    
       try {
         const techs=extractOf([combinedPrompt]);
         const language = getPrimaryLanguage(techs);
-        const res = await axios.post("http://localhost:3000/template", { prompt: combinedPrompt, language });
+        
+        const res = await axios.post("http://localhost:3000/template", { prompt:combinedPrompt });
         setData(res.data);
-
+        console.log(res.data);
 
         if (res.data.files && res.data.files.length > 0) {
           setSelectedFile(res.data.files[0]);
@@ -102,6 +104,7 @@ function getPrimaryLanguage(techs: string[]): string {
         console.error("Axios request failed:", error);
         alert("Failed to fetch data from backend.");
       }
+     
     };
     useEffect(() => {
       if (initialPrompt) {
@@ -114,7 +117,7 @@ function getPrimaryLanguage(techs: string[]): string {
       if(input){
         const updatedHistory=[...promptHistory,input];
         setPromptHistory(updatedHistory);
-        const fullPrompt = updatedHistory.join("/n");
+        const fullPrompt = updatedHistory.join("\n");
         fetchData(fullPrompt);
         promptRef.current.value="";
       }
@@ -124,12 +127,12 @@ function getPrimaryLanguage(techs: string[]): string {
    
  
 
-  if (!data) return <div className="mt-0 bg-black w-screen h-screen text-white text-center mt-10 ">Generating code...</div>;
+  if (!data) return <div className="mt-0 bg-[#0E0E10] relative top-0 w-screen h-screen text-white text-xl flex justify-center items-center ">Generating code...</div>;
   
   return (
     <div className="flex h-screen">
-      <div className="w-[820px]  shadow p-4 flex flex-col bg-black">
-        <div className="flex gap-4 mb-4 bg-black">
+      <div className="w-[820px]  shadow p-4 flex flex-col bg-[#0E0E10] ">
+        <div className="flex gap-4 mb-4 bg-[#0E0E10]">
           <button
             onClick={() => setTab("code")}
             className={`px-4 py-2 rounded ${tab === "code" ? "bg-blue-600 text-white" : "text-blue-600"}`}
@@ -144,14 +147,14 @@ function getPrimaryLanguage(techs: string[]): string {
           </button>
         </div>
 
-        <div className="flex-1 overflow-auto border rounded ">
+        <div className="flex-1 overflow-auto border-0 rounded shadow-2xl border-l-4 border-l-[#333333]">
           {tab === "code" ? (
             <div className="flex h-full">
-              <div className="w-1/4 border-r overflow-auto bg-gray-600 opacity-50">
-                {data.files.map((file) => (
+              <div className="w-1/4 border-0 overflow-auto  bg-opacity-50  shadow-2xl">
+                {data?.files?.map((file) => (
                   <div
                     key={file.name}
-                    className={`p-2 cursor-pointer text-white ${selectedFile?.name === file.name ? "text-white  bg-gray-500 bg-opacity-80 " : "text-white"}`}
+                    className={`p-2 cursor-pointer text-white ${selectedFile?.name === file.name ? "text-white  bg-[#333333] bg-opacity-50 rounded " : "text-white"}`}
                     onClick={() => setSelectedFile(file)}
                   >
                     {file.name}
@@ -159,7 +162,7 @@ function getPrimaryLanguage(techs: string[]): string {
                 ))}
               </div>
 
-              <div className="text-white bg-gray-800 bg-opacity-50 w-full p-2 overflow-auto bg-gray-500 bg-opacity-70 relative">
+              <div className="text-white bg-black w-full p-2 overflow-auto relative">
 
                 <button
                   onClick={() => {
@@ -168,11 +171,11 @@ function getPrimaryLanguage(techs: string[]): string {
                       alert("Code copied to clipboard!");
                     }
                   }}
-                  className="absolute top-2 right-2 bg-gray-500 bg-opacity-20 text-white px-2 py-1 rounded hover:bg-gray-600"
+                  className="absolute top-2 right-2 bg-gray-500 bg-opacity-20 text-white px-2 py-1 rounded hover:[#333333] bg-opacity-50"
                   title="Copy to clipboard"
                 >
-                  {/* Replace below with <Copy size={16} /> if using lucide-react */}
-                  📋
+                  
+                 <Copy size={12} />
                 </button>
 
                 <pre className="text-white p-4 rounded h-full whitespace-pre-wrap">
@@ -184,24 +187,25 @@ function getPrimaryLanguage(techs: string[]): string {
             <iframe
               srcDoc={pre}
               title="Preview"
-              className="w-full h-full border rounded "
-              sandbox="allow-scripts allow-same-origin"
+              className="w-full h-full border-0 rounded "
+              sandbox="allow-scripts"
             >
               Your browser does not support iframes.
             </iframe>
+            
           )}
 
         </div>
 
       </div>
-      <div className="flex-1 bg-gray-900 text-white p-4 overflow-auto relative ">
+      <div className="flex-1 bg-black text-white p-4 overflow-auto relative ">
         <div className="mt-12">
         
           
           <h2 className="text-xl font-bold mb-4">🧠 Explanation</h2>
           <p className="text-sm whitespace-pre-wrap space-y-2 ">{explanation}</p>
           <div className="flex justify-end">
-            <div className="text-right bg-gray-500 bg-opacity-20 py-2 p-2 rounded-lg shadow-xl">{promptInput}</div>
+            <div className="text-right py-2 p-2 rounded-lg shadow-xl">{promptInput}</div>
           </div>
 
           {requirements.length > 0 && (
@@ -219,7 +223,7 @@ function getPrimaryLanguage(techs: string[]): string {
         </div>
 
         <div className="mt-96 flex gap-8 items-center">
-          <input type="text" className="px-12 py-4 bg-gray-500 bg-opacity-20 border border-gray-800 shadow-lg rounded-xl" placeholder="How can I help you ?"  ref={promptRef} />
+          <input type="text" className="px-12 py-4 bg-[#0E0E10] shadow-lg rounded-xl" placeholder="How can I help you ?"  ref={promptRef} />
           <div onClick={handlePrompt}><Send /></div>
         </div>
       </div>

@@ -1,5 +1,4 @@
 import express from "express";
-import { GoogleGenerativeAI } from "@google/generative-ai";
 import { config } from "dotenv";
 import cors from "cors";
 import { tokenModel, transactionModel, zodvalidationSchema } from "./db";
@@ -8,41 +7,44 @@ import jwt from "jsonwebtoken";
 import { nanoid } from "nanoid";
 
 import { authmeddleware } from "./middlewares/authmiddleware";
-import { error } from "console";
+
 const SECRETE = (process.env.SECRETE || "defaultsecrete") as string;
+
 function extractExplanationAndRequirements(text: string) {
-  const explanationEnd = text.indexOf("```");
-  const explanationText = explanationEnd !== -1 ? text.slice(0, explanationEnd).trim() : text.trim();
 
-  const requirements: string[] = [];
+  const cleanedText = text.replace(/```[\s\S]*?```/g, "").trim();
+  const installationIndex = cleanedText.indexOf("To run this application:");
+  let explanationText = "";
+  let requirementsText = "";
 
-  const lines = explanationText.split("\n");
-  for (const line of lines) {
-    if (
-      line.trim().startsWith("-") ||
-      line.trim().startsWith("*") ||
-      line.trim().startsWith("•") ||
-      line.trim().startsWith("Install") ||
-      line.trim().startsWith("Run") ||
-      line.trim().startsWith("npm") ||
-      line.trim().startsWith("yarn") ||
-      line.trim().startsWith("python") ||
-      line.trim().startsWith("java")
-    ) {
-      requirements.push(line.trim());
-    }
+  if (installationIndex !== -1) {
+    explanationText = cleanedText.slice(0, installationIndex).trim();
+    requirementsText = cleanedText.slice(installationIndex).trim();
+  } else {
+    explanationText = cleanedText;
   }
 
-  const filteredExplanation = lines
-    .filter((line) => !requirements.includes(line.trim()))
-    .join("\n")
-    .trim();
-
   return {
-    explanation: filteredExplanation,
-    requirements,
+    explanation: explanationText,
+    requirements: requirementsText,
   };
 }
+function detectLanguageFromPromptOrFallback(prompt: string, deepseekCode: string): string {
+  const knownTechs = ["react", "vue", "angular", "node.js", "express", "next.js", "python", "flask", "django", "java", "c++", "typescript", "javascript"];
+  const lowerPrompt = prompt.toLowerCase();
+  const foundTech = knownTechs.find(tech => lowerPrompt.includes(tech));
+  if (foundTech) return foundTech;
+  if (deepseekCode.includes("import React")) return "react";
+  if (deepseekCode.includes("from flask import") || deepseekCode.includes("def") && deepseekCode.includes("app.route")) return "flask";
+  if (deepseekCode.includes("class") && deepseekCode.includes("public static void main")) return "java";
+  if (deepseekCode.includes("#include") || deepseekCode.includes("int main()")) return "c++";
+  if (deepseekCode.includes("def") && deepseekCode.includes("print")) return "python";
+  if (deepseekCode.includes("const express = require") || deepseekCode.includes("app.listen")) return "node.js";
+  if (deepseekCode.includes("function") || deepseekCode.includes("console.log")) return "javascript";
+
+  return "unknown";
+}
+
 
 
 config();
@@ -58,58 +60,74 @@ if (!apiKey) {
   throw new Error("Missing Google API key in environment variables");
 }
 
-const genAI = new GoogleGenerativeAI(apiKey);
 
-app.post("/template", async (req:any, res:any) => {
+app.post("/template", async (req: any, res: any) => {
   try {
-    const { prompt, language } = req.body;
+    console.log("template route is hit");
+    const { prompt } = req.body;
 
     if (!prompt || typeof prompt !== "string") {
       return res.status(400).json({ error: "Prompt is required and must be a string." });
     }
-
-    if (!language || typeof language !== "string") {
-      return res.status(400).json({ error: "Language is required and must be a string." });
+    const openrouterRes = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${process.env.CLAUD_API_KEY}`,
+        "HTTP-Referer": "http://localhost:3000",
+        "X-Title": "MyProject",
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: "deepseek/deepseek-r1-0528:free",
+        messages: [
+          {
+            role: "user",
+            content: prompt
+          }
+        ]
+      })
+    });
+    if (!openrouterRes.ok) {
+      const errorBody = await openrouterRes.text();
+      console.error("OpenRouter API Error:", errorBody);
+      return res.status(500).json({ error: "OpenRouter API call failed" });
     }
 
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text = await response.text();
-    console.log("Generated Text:\n", text);
-    const { explanation, requirements } = extractExplanationAndRequirements(text);
-    const extensionMap: { [key: string]: string } = {
-      javascript: "js",
-      js: "js",
-      jsx: "jsx",
-      tsx: "tsx",
-      typescript: "ts",
-      html: "html",
-      css: "css",
-      json: "json",
-      java: "java",
-      python: "py",
-      text: "txt",
-      react: "jsx",
-      vue: "vue",
-    };
+    const result = await openrouterRes.json();
+    const text = result.choices[0]?.message?.content || "";
+    console.log(text);
+    const lang = detectLanguageFromPromptOrFallback(prompt, text);
     const codeBlocks = Array.from(
-      text.matchAll(/```(?:(\w+)\n)?([\s\S]*?)```/g)
-    ).map((match, index) => {
-      const rawLang = match[1];
-      const code = match[2].trim();
-      const lang = rawLang ? rawLang.toLowerCase() : "text";
-      const extension  = extensionMap[lang.toLowerCase()] || "txt";
+      text.matchAll(/```(\w+)?\n([\s\S]*?)```/g)
+    ).map((match) => {
+      const groups = match as RegExpMatchArray;
+      const lang = groups[1]?.toLowerCase() || "text";
+      const code = groups[2].trim();
+
+      const extensionMap: Record<string, string> = {
+        javascript: "js",
+        typescript: "ts",
+        tsx: "tsx",
+        jsx: "jsx",
+        html: "html",
+        css: "css",
+        json: "json",
+        python: "py",
+        text: "txt",
+      };
+
+      const extension = extensionMap[lang] || "txt";
+      const matching = code.match(/function\s+(\w+)\s*\(|const\s+(\w+)\s*=\s*\(/);
+      const componentName = matching?.[1] || matching?.[2];
+
       return {
-        name: `file${index + 1}.${extension}`,
+        name: `${componentName}.${extension}`,
         lang,
         code,
       };
     });
-
-    
-
-    res.json({ files: codeBlocks,explanation,requirements});
+    const { explanation, requirements } = extractExplanationAndRequirements(text);
+    res.json({ files: codeBlocks, explanation, requirements });
   } catch (error) {
     console.error("Error generating template:", error);
     res.status(500).json({ error: "Failed to generate template" });
@@ -119,7 +137,7 @@ app.post("/template", async (req:any, res:any) => {
 
 
 
-app.post("/referral/:userId", async (req:any, res:any) => {
+app.post("/referral/:userId", async (req: any, res: any) => {
   try {
     const { referredBy } = req.body;
     const userId = req.params.userId;
@@ -127,7 +145,7 @@ app.post("/referral/:userId", async (req:any, res:any) => {
     const tokens = await tokenModel.findOne({ userId });
     if (!tokens) return res.status(404).json({ error: "User token not found" });
 
-   
+
     if (!tokens.referralCode) {
       let uniqueCode;
       do {
@@ -136,7 +154,7 @@ app.post("/referral/:userId", async (req:any, res:any) => {
       tokens.referralCode = uniqueCode;
     }
 
- 
+
     if (
       referredBy &&
       referredBy !== tokens.referralCode &&
@@ -174,7 +192,7 @@ app.post("/referral/:userId", async (req:any, res:any) => {
   }
 });
 
-app.post("/signup", async (req:any, res:any) => {
+app.post("/signup", async (req: any, res: any) => {
   try {
     const validation = zodvalidationSchema.parse(req.body);
 
@@ -185,7 +203,7 @@ app.post("/signup", async (req:any, res:any) => {
 
     const user = await userModel.create(validation);
     const token = jwt.sign({ email: validation.email }, SECRETE);
-    const userId=user._id;
+    const userId = user._id;
     res.status(201).json({ message: "Signup successful", token, userId });
   } catch (error) {
     console.error("Signup error:", error);
@@ -193,27 +211,27 @@ app.post("/signup", async (req:any, res:any) => {
   }
 });
 
-app.post("/signin",async (req,res)=>{
- 
-  const validateData=zodvalidationSchema.parse(req.body)
-  const response=await userModel.findOne({email:validateData.email});
-  if(response){
-    const token=jwt.sign({username:validateData.username,email:validateData.email},SECRETE);
+app.post("/signin", async (req, res) => {
+
+  const validateData = zodvalidationSchema.parse(req.body)
+  const response = await userModel.findOne({ email: validateData.email });
+  if (response) {
+    const token = jwt.sign({ username: validateData.username, email: validateData.email }, SECRETE);
     res.send({
-      message:"you have signin",
+      message: "you have signin",
       token,
-      username:response.username
+      username: response.username
     })
   }
-  else{
+  else {
     res.status(404).send({
-      message:"invalide credentials"
+      message: "invalide credentials"
     })
   }
 })
-app.delete("/signout",authmeddleware,async (req:any,res:any) =>{
-  const user=(req as any).user;
-  await userModel.deleteOne({email:user.email});
+app.delete("/signout", authmeddleware, async (req: any, res: any) => {
+  const user = (req as any).user;
+  await userModel.deleteOne({ email: user.email });
   return res.status(200).json({
     message: `User ${user.email} signed out successfully`,
   });
@@ -244,21 +262,21 @@ app.delete("/signout",authmeddleware,async (req:any,res:any) =>{
 //   }
 // });
 
-app.get("/user/:userId",async (req,res) =>{
-  try{
-    const user=await userModel.findById(req.params.userId);
-    res.status(201).json({user});
+app.get("/user/:userId", async (req, res) => {
+  try {
+    const user = await userModel.findById(req.params.userId);
+    res.status(201).json({ user });
   }
-  catch(err){
-    res.status(400).json({error:"user not found"});
+  catch (err) {
+    res.status(400).json({ error: "user not found" });
   }
 })
-app.get("/token/:userId",async (req,res)=>{
-  try{
-    const tokens=await tokenModel.findById(req.params.userId);
-    res.status(201).json({tokens});
+app.get("/token/:userId", async (req, res) => {
+  try {
+    const tokens = await tokenModel.findById(req.params.userId);
+    res.status(201).json({ tokens });
   }
-  catch(e){
+  catch (e) {
     res.status(404).json({ error: "Token data not found" });
   }
 })
@@ -267,10 +285,10 @@ app.get("/transactions/:userId", async (req, res) => {
     const txs = await transactionModel.find({ userId: req.params.userId }).sort({ createdAt: -1 });
     res.status(200).json(txs);
   } catch (err) {
-    res.status(400).json({ error:"error message"});
+    res.status(400).json({ error: "error message" });
   }
 });
-app.post("/buy", async (req:any, res:any) => {
+app.post("/buy", async (req: any, res: any) => {
   try {
     const { userId, amount } = req.body;
 
@@ -310,14 +328,14 @@ app.post("/spend", async (req: any, res: any) => {
       return res.status(404).json({ error: "Token record not found" });
     }
 
-    
+
     if (tokens.total < amount) {
       return res.status(400).json({ error: "Not enough tokens" });
     }
 
     let remaining = amount;
 
-   
+
     if (tokens.paid >= remaining) {
       tokens.paid -= remaining;
     } else {

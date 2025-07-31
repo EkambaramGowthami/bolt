@@ -13,7 +13,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
-const generative_ai_1 = require("@google/generative-ai");
 const dotenv_1 = require("dotenv");
 const cors_1 = __importDefault(require("cors"));
 const db_1 = require("./db");
@@ -23,31 +22,43 @@ const nanoid_1 = require("nanoid");
 const authmiddleware_1 = require("./middlewares/authmiddleware");
 const SECRETE = (process.env.SECRETE || "defaultsecrete");
 function extractExplanationAndRequirements(text) {
-    const explanationEnd = text.indexOf("```");
-    const explanationText = explanationEnd !== -1 ? text.slice(0, explanationEnd).trim() : text.trim();
-    const requirements = [];
-    const lines = explanationText.split("\n");
-    for (const line of lines) {
-        if (line.trim().startsWith("-") ||
-            line.trim().startsWith("*") ||
-            line.trim().startsWith("•") ||
-            line.trim().startsWith("Install") ||
-            line.trim().startsWith("Run") ||
-            line.trim().startsWith("npm") ||
-            line.trim().startsWith("yarn") ||
-            line.trim().startsWith("python") ||
-            line.trim().startsWith("java")) {
-            requirements.push(line.trim());
-        }
+    const cleanedText = text.replace(/```[\s\S]*?```/g, "").trim();
+    const installationIndex = cleanedText.indexOf("To run this application:");
+    let explanationText = "";
+    let requirementsText = "";
+    if (installationIndex !== -1) {
+        explanationText = cleanedText.slice(0, installationIndex).trim();
+        requirementsText = cleanedText.slice(installationIndex).trim();
     }
-    const filteredExplanation = lines
-        .filter((line) => !requirements.includes(line.trim()))
-        .join("\n")
-        .trim();
+    else {
+        explanationText = cleanedText;
+    }
     return {
-        explanation: filteredExplanation,
-        requirements,
+        explanation: explanationText,
+        requirements: requirementsText,
     };
+}
+function detectLanguageFromPromptOrFallback(prompt, deepseekCode) {
+    const knownTechs = ["react", "vue", "angular", "node.js", "express", "next.js", "python", "flask", "django", "java", "c++", "typescript", "javascript"];
+    const lowerPrompt = prompt.toLowerCase();
+    const foundTech = knownTechs.find(tech => lowerPrompt.includes(tech));
+    if (foundTech)
+        return foundTech;
+    if (deepseekCode.includes("import React"))
+        return "react";
+    if (deepseekCode.includes("from flask import") || deepseekCode.includes("def") && deepseekCode.includes("app.route"))
+        return "flask";
+    if (deepseekCode.includes("class") && deepseekCode.includes("public static void main"))
+        return "java";
+    if (deepseekCode.includes("#include") || deepseekCode.includes("int main()"))
+        return "c++";
+    if (deepseekCode.includes("def") && deepseekCode.includes("print"))
+        return "python";
+    if (deepseekCode.includes("const express = require") || deepseekCode.includes("app.listen"))
+        return "node.js";
+    if (deepseekCode.includes("function") || deepseekCode.includes("console.log"))
+        return "javascript";
+    return "unknown";
 }
 (0, dotenv_1.config)();
 const app = (0, express_1.default)();
@@ -57,48 +68,67 @@ const apiKey = process.env.CLAUD_API_KEY;
 if (!apiKey) {
     throw new Error("Missing Google API key in environment variables");
 }
-const genAI = new generative_ai_1.GoogleGenerativeAI(apiKey);
 app.post("/template", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a, _b;
     try {
-        const { prompt, language } = req.body;
+        console.log("template route is hit");
+        const { prompt } = req.body;
         if (!prompt || typeof prompt !== "string") {
             return res.status(400).json({ error: "Prompt is required and must be a string." });
         }
-        if (!language || typeof language !== "string") {
-            return res.status(400).json({ error: "Language is required and must be a string." });
+        const openrouterRes = yield fetch("https://openrouter.ai/api/v1/chat/completions", {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${process.env.CLAUD_API_KEY}`,
+                "HTTP-Referer": "http://localhost:3000",
+                "X-Title": "MyProject",
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                model: "deepseek/deepseek-r1-0528:free",
+                messages: [
+                    {
+                        role: "user",
+                        content: prompt
+                    }
+                ]
+            })
+        });
+        if (!openrouterRes.ok) {
+            const errorBody = yield openrouterRes.text();
+            console.error("OpenRouter API Error:", errorBody);
+            return res.status(500).json({ error: "OpenRouter API call failed" });
         }
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-        const result = yield model.generateContent(prompt);
-        const response = yield result.response;
-        const text = yield response.text();
-        console.log("Generated Text:\n", text);
-        const { explanation, requirements } = extractExplanationAndRequirements(text);
-        const extensionMap = {
-            javascript: "js",
-            js: "js",
-            jsx: "jsx",
-            tsx: "tsx",
-            typescript: "ts",
-            html: "html",
-            css: "css",
-            json: "json",
-            java: "java",
-            python: "py",
-            text: "txt",
-            react: "jsx",
-            vue: "vue",
-        };
-        const codeBlocks = Array.from(text.matchAll(/```(?:(\w+)\n)?([\s\S]*?)```/g)).map((match, index) => {
-            const rawLang = match[1];
-            const code = match[2].trim();
-            const lang = rawLang ? rawLang.toLowerCase() : "text";
-            const extension = extensionMap[lang.toLowerCase()] || "txt";
+        const result = yield openrouterRes.json();
+        const text = ((_b = (_a = result.choices[0]) === null || _a === void 0 ? void 0 : _a.message) === null || _b === void 0 ? void 0 : _b.content) || "";
+        console.log(text);
+        const lang = detectLanguageFromPromptOrFallback(prompt, text);
+        const codeBlocks = Array.from(text.matchAll(/```(\w+)?\n([\s\S]*?)```/g)).map((match) => {
+            var _a;
+            const groups = match;
+            const lang = ((_a = groups[1]) === null || _a === void 0 ? void 0 : _a.toLowerCase()) || "text";
+            const code = groups[2].trim();
+            const extensionMap = {
+                javascript: "js",
+                typescript: "ts",
+                tsx: "tsx",
+                jsx: "jsx",
+                html: "html",
+                css: "css",
+                json: "json",
+                python: "py",
+                text: "txt",
+            };
+            const extension = extensionMap[lang] || "txt";
+            const matching = code.match(/function\s+(\w+)\s*\(|const\s+(\w+)\s*=\s*\(/);
+            const componentName = (matching === null || matching === void 0 ? void 0 : matching[1]) || (matching === null || matching === void 0 ? void 0 : matching[2]);
             return {
-                name: `file${index + 1}.${extension}`,
+                name: `${componentName}.${extension}`,
                 lang,
                 code,
             };
         });
+        const { explanation, requirements } = extractExplanationAndRequirements(text);
         res.json({ files: codeBlocks, explanation, requirements });
     }
     catch (error) {

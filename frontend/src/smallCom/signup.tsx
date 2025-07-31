@@ -1,7 +1,9 @@
 import axios from "axios";
 import { useRef } from "react"
+import { useNavigate } from "react-router-dom";
 
 export const Signup = ({setSignupButton}:any) =>{
+  const navigate=useNavigate();
     const userRef=useRef();
     const emailRef=useRef();
     const passwordRef=useRef();
@@ -25,8 +27,9 @@ export const Signup = ({setSignupButton}:any) =>{
           });
       
           localStorage.setItem("token", response.data.token);
-          setSignupButton(false);
           console.log("signup success", response.data);
+          navigate("/dashboard");
+          
       
           
           
@@ -37,21 +40,18 @@ export const Signup = ({setSignupButton}:any) =>{
       };
       
     return (
-        <div className="text-center rounded-lg shadow-lg p-6 shadow-lg shadow-blue-500" onMouseLeave={()=>setSignupButton(false)}>
-            <div className="flex justify-center items-center font-md text-3xl text-blue-500">
+        <div className="w-screen h-screen bg-[#0E0E10] flex flex-col justify-center items-center text-center " >
+          <div className="bg-[#333333] bg-opacity-50 rounded-lg shadow-lg p-4 space-y-4">
+            <div className="flex justify-center items-center font-md text-3xl text-white">
                 Signup
             </div>
             <div className="space-y-3 p-4">
                <div><input type="text" placeholder="username" className="px-12 py-2 rounded" ref={userRef}/></div> 
                <div><input type="text" placeholder="email" className="px-12 py-2 rounded" ref={emailRef} /></div>
                <div><input type="text" placeholder="password" className="px-12 py-2 rounded"  ref={passwordRef} /></div>
-               <div><button className="bg-blue-500 text-white font-md px-4 py-2 rounded" onClick={handleOnClick}>Submit</button></div>
-                
-                
-                
-
+               <div><button className="bg-blue-500 text-white font-md px-4 py-2 rounded" onClick={handleOnClick}>Create Account</button></div>
             </div>
-
         </div>
+      </div>
     )
 }
