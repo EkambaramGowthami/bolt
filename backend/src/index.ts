@@ -4,14 +4,16 @@ import cors from "cors";
 import { tokenModel, transactionModel, zodvalidationSchema } from "./db";
 import { userModel } from "./db";
 import jwt from "jsonwebtoken";
-import { nanoid } from "nanoid";
-
+import { Response,Request } from "express";
 import { authmeddleware } from "./middlewares/authmiddleware";
+import { matchPathFromCodeOrFallback } from "./utils/PathMacher";
+import axios from "axios";
 
+const CLIENT_ID=process.env.CLIENT_ID!;
+const CLIENT_SECRET=process.env.CLIENT_SECRET!;
+const REDIRECT_URI="http://localhost:3000/api/auth/google/callback";
 const SECRETE = (process.env.SECRETE || "defaultsecrete") as string;
-
 function extractExplanationAndRequirements(text: string) {
-
   const cleanedText = text.replace(/```[\s\S]*?```/g, "").trim();
   const installationIndex = cleanedText.indexOf("To run this application:");
   let explanationText = "";
@@ -29,18 +31,11 @@ function extractExplanationAndRequirements(text: string) {
     requirements: requirementsText,
   };
 }
-function detectLanguageFromPromptOrFallback(prompt: string, deepseekCode: string): string {
+function detectLanguageFromPromptOrFallback(prompt: string): string {
   const knownTechs = ["react", "vue", "angular", "node.js", "express", "next.js", "python", "flask", "django", "java", "c++", "typescript", "javascript"];
   const lowerPrompt = prompt.toLowerCase();
   const foundTech = knownTechs.find(tech => lowerPrompt.includes(tech));
   if (foundTech) return foundTech;
-  if (deepseekCode.includes("import React")) return "react";
-  if (deepseekCode.includes("from flask import") || deepseekCode.includes("def") && deepseekCode.includes("app.route")) return "flask";
-  if (deepseekCode.includes("class") && deepseekCode.includes("public static void main")) return "java";
-  if (deepseekCode.includes("#include") || deepseekCode.includes("int main()")) return "c++";
-  if (deepseekCode.includes("def") && deepseekCode.includes("print")) return "python";
-  if (deepseekCode.includes("const express = require") || deepseekCode.includes("app.listen")) return "node.js";
-  if (deepseekCode.includes("function") || deepseekCode.includes("console.log")) return "javascript";
 
   return "unknown";
 }
@@ -52,22 +47,28 @@ config();
 const app = express();
 app.use(express.json());
 app.use(cors());
-
-
-
 const apiKey = process.env.CLAUD_API_KEY;
 if (!apiKey) {
   throw new Error("Missing Google API key in environment variables");
 }
 
 
-app.post("/template", async (req: any, res: any) => {
+app.post("/template", async (req: Request, res: Response) => {
   try {
     console.log("template route is hit");
-    const { prompt } = req.body;
+    let { prompt } = req.body;
 
     if (!prompt || typeof prompt !== "string") {
       return res.status(400).json({ error: "Prompt is required and must be a string." });
+    }
+    let langauage = "";
+    if(detectLanguageFromPromptOrFallback(prompt) == "unknown"){
+      prompt += "html";
+      langauage="html";
+
+    }
+    else{
+      langauage=detectLanguageFromPromptOrFallback(prompt);
     }
     const openrouterRes = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
@@ -96,15 +97,17 @@ app.post("/template", async (req: any, res: any) => {
     const result = await openrouterRes.json();
     const text = result.choices[0]?.message?.content || "";
     console.log(text);
-    const lang = detectLanguageFromPromptOrFallback(prompt, text);
+    
+    
     const codeBlocks = Array.from(
       text.matchAll(/```(\w+)?\n([\s\S]*?)```/g)
-    ).map((match) => {
+    ).map((match,index) => {
       const groups = match as RegExpMatchArray;
       const lang = groups[1]?.toLowerCase() || "text";
       const code = groups[2].trim();
 
       const extensionMap: Record<string, string> = {
+        vue:"vue",
         javascript: "js",
         typescript: "ts",
         tsx: "tsx",
@@ -117,11 +120,10 @@ app.post("/template", async (req: any, res: any) => {
       };
 
       const extension = extensionMap[lang] || "txt";
-      const matching = code.match(/function\s+(\w+)\s*\(|const\s+(\w+)\s*=\s*\(/);
-      const componentName = matching?.[1] || matching?.[2];
+      
 
       return {
-        name: `${componentName}.${extension}`,
+        name: `file${index+1}.${extension}`,
         lang,
         code,
       };
@@ -135,64 +137,7 @@ app.post("/template", async (req: any, res: any) => {
 });
 
 
-
-
-app.post("/referral/:userId", async (req: any, res: any) => {
-  try {
-    const { referredBy } = req.body;
-    const userId = req.params.userId;
-
-    const tokens = await tokenModel.findOne({ userId });
-    if (!tokens) return res.status(404).json({ error: "User token not found" });
-
-
-    if (!tokens.referralCode) {
-      let uniqueCode;
-      do {
-        uniqueCode = nanoid(6);
-      } while (await tokenModel.findOne({ referralCode: uniqueCode }));
-      tokens.referralCode = uniqueCode;
-    }
-
-
-    if (
-      referredBy &&
-      referredBy !== tokens.referralCode &&
-      referredBy !== tokens.referredBy
-    ) {
-      const referrerToken = await tokenModel.findOne({ referralCode: referredBy });
-
-      if (!referrerToken) {
-        return res.status(400).json({ error: "Invalid referral code" });
-      }
-
-      tokens.referredBy = referredBy;
-
-      const bonus = 20;
-      referrerToken.free += bonus;
-      referrerToken.total += bonus;
-      await referrerToken.save();
-
-      await transactionModel.create({
-        userId: referrerToken.userId,
-        type: "referral",
-        amount: bonus,
-      });
-    }
-
-    await tokens.save();
-
-    return res.status(200).json({
-      message: "Referral applied successfully",
-      referralCode: tokens.referralCode,
-    });
-  } catch (err) {
-    console.error("Referral error:", err);
-    return res.status(500).json({ error: "Internal server error" });
-  }
-});
-
-app.post("/signup", async (req: any, res: any) => {
+app.post("/signup", async (req: Request, res: Response) => {
   try {
     const validation = zodvalidationSchema.parse(req.body);
 
@@ -211,7 +156,7 @@ app.post("/signup", async (req: any, res: any) => {
   }
 });
 
-app.post("/signin", async (req, res) => {
+app.post("/signin", async (req: Request, res: Response) => {
 
   const validateData = zodvalidationSchema.parse(req.body)
   const response = await userModel.findOne({ email: validateData.email });
@@ -236,33 +181,9 @@ app.delete("/signout", authmeddleware, async (req: any, res: any) => {
     message: `User ${user.email} signed out successfully`,
   });
 })
-// app.post("/token/init", async (req: any, res: any) => {
-//   const { userId } = req.body;
 
-//   if (!userId) {
-//     return res.status(400).json({ error: "userId is required" });
-//   }
 
-//   try {
-//     const existing = await tokenModel.findOne({ userId });
-//     if (!existing) {
-//       const newModel = new tokenModel({
-//         userId,
-//         free: 10,
-//         total: 10,
-//         // referralCode not set here unless you want to assign a unique one
-//       });
-//       await newModel.save();
-//     }
-
-//     res.status(200).json({ message: "Token initialized" });
-//   } catch (err: any) {
-//     console.error("Error in /token/init:", err);
-//     res.status(500).json({ error: "Internal server error", details: err.message });
-//   }
-// });
-
-app.get("/user/:userId", async (req, res) => {
+app.get("/user/:userId", async (req: Request, res: Response) => {
   try {
     const user = await userModel.findById(req.params.userId);
     res.status(201).json({ user });
@@ -280,89 +201,36 @@ app.get("/token/:userId", async (req, res) => {
     res.status(404).json({ error: "Token data not found" });
   }
 })
-app.get("/transactions/:userId", async (req, res) => {
-  try {
-    const txs = await transactionModel.find({ userId: req.params.userId }).sort({ createdAt: -1 });
-    res.status(200).json(txs);
-  } catch (err) {
-    res.status(400).json({ error: "error message" });
-  }
-});
-app.post("/buy", async (req: any, res: any) => {
-  try {
-    const { userId, amount } = req.body;
 
-    const tokens = await tokenModel.findOne({ userId });
-
-    if (!tokens) {
-      return res.status(404).json({ error: "Token record not found for this user" });
-    }
-
-    tokens.paid += amount;
-    tokens.total += amount;
-    await tokens.save();
-
-    await transactionModel.create({
-      userId,
-      type: "purchase",
-      amount,
+app.get("/api/auth/google/callback",async (req: Request, res: Response)=>{
+  const code=req.query.code;
+  try{
+    const tokenResponse = await axios.post("https://oauth2.googleapis.com/token",null,{
+      params:{
+        code,
+        client_id:CLIENT_ID,
+        client_secret: CLIENT_SECRET,
+        redirect_uri:REDIRECT_URI,
+        grant_type:"authorization_code"
+      },
+      headers:{"Content-Type":"application/x-www-form-urlencoded"},
     });
-
-    res.status(200).json({ message: "Tokens purchased", tokens });
-  } catch (err) {
-    if (err instanceof Error) {
-      res.status(400).json({ error: err.message });
-    } else {
-      res.status(400).json({ error: "Unknown error" });
-    }
-  }
-});
-
-app.post("/spend", async (req: any, res: any) => {
-  try {
-    const { userId, amount } = req.body;
-
-    const tokens = await tokenModel.findOne({ userId });
-
-    if (!tokens) {
-      return res.status(404).json({ error: "Token record not found" });
-    }
-
-
-    if (tokens.total < amount) {
-      return res.status(400).json({ error: "Not enough tokens" });
-    }
-
-    let remaining = amount;
-
-
-    if (tokens.paid >= remaining) {
-      tokens.paid -= remaining;
-    } else {
-      remaining -= tokens.paid;
-      tokens.paid = 0;
-      tokens.free -= remaining;
-    }
-
-    tokens.total -= amount;
-    await tokens.save();
-
-    await transactionModel.create({
-      userId,
-      type: "spend",
-      amount
+    const accessToken=tokenResponse.data.access_token;
+    const userResponse = await axios.get("https://www.googleapis.com/oauth2/v2/userinfo",{
+      headers:{"Authorization":`Bearer ${accessToken}`},
     });
+    const user=userResponse.data;
+    console.log("user data:",user);
+    res.redirect(`http://localhost:5173/dashboard?name=${encodeURIComponent(user.name)}`);
 
-    res.status(200).json({ message: "Tokens spent", tokens });
-
-  } catch (err) {
-    if (err instanceof Error) {
-      res.status(400).json({ error: err.message });
-    } else {
-      res.status(400).json({ error: "Unknown error occurred" });
-    }
   }
-});
+  catch(err){
+    const error = err as any;
+    console.error(error.response?.data || error.message);
+    
+    
+  }
+})
 
 app.listen(3000, () => {
   console.log("Server running on http://localhost:3000");

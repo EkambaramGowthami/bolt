@@ -1,12 +1,12 @@
 import { ChevronDown, ChevronUp, X } from "lucide-react"
 import { Profile } from "../symbols/Profile";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ToggleLeft, ToggleRight } from "lucide-react";
 import { Free } from "../card/Free";
 import { Pro } from "../card/Pro";
 import { Teams } from "../card/Teams";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 
 export const Pricing = () => {
@@ -19,11 +19,16 @@ export const Pricing = () => {
     const [six,setSix]=useState(false);
     const [seven,setSeven]=useState(false);
     const navigate = useNavigate ();
-    const { username } = useParams();
+    const [username,setUsername]=useState<string | null>(null);
     const handleCancel = (e) => {
         e.preventDefault();
         navigate("/dashboard");
       };
+    useEffect(()=>{
+        const storedUsername = localStorage.getItem("username");
+        setUsername(storedUsername);
+
+    },[]);
     return (
         <div className="bg-black bg-opacity-90 w-full h-full p-12">
             <div className="flex justify-end text-white rounded-full text-sm" onClick={handleCancel}>

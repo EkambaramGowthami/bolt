@@ -20,6 +20,7 @@ export const Signin = ({setSigninButton,setUsername}:any) =>{
             password
         })
         localStorage.setItem("token", response.data.token);
+        localStorage.setItem("username",username);
         const decoded: any = jwtDecode(response.data.token);
         console.log(decoded.username);
         setUsername(decoded.username);

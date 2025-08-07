@@ -1,127 +1,233 @@
+
+import { transform } from "@babel/standalone";
+
 type File = { name: string; code: string };
+type LangType = "react" | "vue" | "tailwind" | "html" | "java" | "unknown";
 
-export function generateHtmlPreview(files: File[]): string {
-  const html = files.find(f => f.name.endsWith(".html"))?.code || "";
-  const css = files.find(f => f.name.endsWith(".css"))?.code || "";
-  const js = files.find(f => f.name.endsWith(".js"))?.code || "";
-
-  return `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <style>${css}</style>
-    </head>
-    <body>
-      ${html}
-      <script>${js}</script>
-    </body>
-    </html>
-  `;
+function isImage(name: string) {
+  return /\.(png|jpe?g|gif|svg|webp)$/i.test(name);
 }
 
-export function generateCSSPreview(files: File[]): string {
-  const css = files.find(f => f.name.endsWith(".css"))?.code || "";
-
-  return `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <style>${css}</style>
-    </head>
-    <body>
-      <p style="padding: 1rem;">Styled by CSS file</p>
-    </body>
-    </html>
-  `;
+function getImageUrl(name: string, files: File[]) {
+  const file = files.find(f => f.name === name);
+  return file ? `data:image/${name.split(".").pop()};base64,${file.code}` : "";
 }
 
-export function generateJavaScriptPreview(files: File[]): string {
-  const js = files.find(f => f.name.endsWith(".js"))?.code || "";
+export function generateUniversalPreview(
+  files: File[],
+  detectedType: LangType
+): string {
+  const get = (ext: string) =>
+    files.find(f => f.name.endsWith(ext))?.code || "";
 
-  return `
-    <!DOCTYPE html>
-    <html>
-    <body>
-      <script>${js}</script>
-    </body>
-    </html>
-  `;
+  const css = get(".css");
+  const js = get(".js");
+  const html = get(".html");
+  const jsxFile = files.find(
+    f => f.name.endsWith(".jsx") || f.name.endsWith(".tsx")
+  );
+
+  switch (detectedType) {
+    
+   
+    
+      case "vue": {
+        const vueFile = files.find(f => f.name.endsWith(".vue"));
+        let templateCode = "";
+        let scriptCode = "";
+        let styleCode = "";
+        
+        if (vueFile) {
+          const templateMatch = vueFile.code.match(/<template>([\s\S]*?)<\/template>/);
+          const scriptMatch = vueFile.code.match(/<script[^>]*>([\s\S]*?)<\/script>/);
+          const styleMatch = vueFile.code.match(/<style[^>]*>([\s\S]*?)<\/style>/);
+        
+          templateCode = templateMatch ? templateMatch[1].trim() : "";
+          scriptCode = scriptMatch ? scriptMatch[1].trim() : "";
+          styleCode = styleMatch ? styleMatch[1].trim() : "";
+        
+          if (/export\s+default/.test(scriptCode)) {
+            scriptCode = scriptCode.replace(/export\s+default/, "window.App = ");
+          } else if (vueFile.code.includes("<script setup")) {
+            return `<html><body><pre style="color:red;">⚠️ &lt;script setup&gt; is not supported in preview. Please use &lt;script&gt; with export default.</pre></body></html>`;
+          } else {
+            scriptCode = "window.App = {}";
+          }
+          
+          templateCode = templateCode.replace(/`/g, '\\`');
+          scriptCode += `;\nif(window.App){ window.App.template = \`${templateCode}\`; }`;
+        } else {
+          return `<html><body><pre style="color:red;">No .vue file found.</pre></body></html>`;
+        }
+        console.log("Script Code:", scriptCode);
+console.log("Window.App:", window.App);
+
+        return `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+            <style>${styleCode}</style>
+          </head>
+          <body>
+            <div id="app"></div>
+            <script>
+              (function(){
+                // Fallback for defineComponent-based exports
+                const defineComponent = (comp) => comp;
+        
+                ${scriptCode}
+              })();
+        
+              if (typeof window.App !== 'undefined') {
+                Vue.createApp(window.App).mount("#app");
+              } else {
+                document.body.innerHTML = '<pre style="color:red;">App component not defined.</pre>';
+              }
+            <\/script>
+          </body>
+        </html>
+        `;
+        
+    }
+
+    
+    
+    
+    
+    
+    case "tailwind": {
+      return `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <script src="https://cdn.tailwindcss.com"></script>
+            <style>${css}</style>
+          </head>
+          <body class="p-4">
+            ${html}
+            <script>${js}</script>
+          </body>
+        </html>`;
+    }
+
+    case "html": {
+      const imgTags = files
+        .filter(f => isImage(f.name))
+        .map(
+          f =>
+            `<img src="${getImageUrl(f.name, files)}" alt="${f.name}" style="max-width: 200px; margin: 10px;" />`
+        )
+        .join("");
+
+      return `
+        <!DOCTYPE html>
+        <html>
+          <head><style>${css}</style></head>
+          <body>
+            ${html}
+            ${imgTags}
+            <script>${js}</script>
+          </body>
+        </html>`;
+    }
+
+    case "java": {
+      const javaOutput =
+        files.find(f => f.name.endsWith(".java"))?.code || "No output";
+      return `
+        <!DOCTYPE html>
+        <html>
+          <body>
+            <h3>Java Output:</h3>
+            <pre style="background:#f0f0f0; padding:10px">${javaOutput}</pre>
+          </body>
+        </html>`;
+    }
+
+    default:
+      return `<html><body><pre>No preview available</pre></body></html>`;
+  }
 }
 
-export function generateReactPreview(files: { name: string; code: string }[]): string {
-  const indexFile = files.find((file) => file.name.includes("index") || file.name.includes("App"));
-  const code = indexFile?.code || "// no code";
+
+
+
+export function generateReactPreview(files: File[]): string {
+  const jsxFile = files.find(f => f.name.endsWith(".tsx") || f.name.endsWith(".jsx"));
+  const cssFile = files.find(f => f.name.endsWith(".css"));
+  const css = cssFile?.code || "";
+
+  if (!jsxFile) return "Missing React file";
+  let userCode = jsxFile.code.replace(/^import\s.+;?\n?/gm, "");
+  userCode = userCode.replace(/export\s+default\s+/gm, "const App = ");
+  userCode = userCode.replace(/\b(useState|useEffect|useRef|useMemo|useCallback|useContext|useReducer|useLayoutEffect|useImperativeHandle|useTransition|useDeferredValue)\b/g, "React.$1");
+
+  let transpiledCode = "";
+  try {
+    transpiledCode = transform(userCode, {
+      presets: ["typescript", "react"],
+      filename: "App.tsx",
+    }).code || "";
+  } catch (err) {
+    return `<pre style="color:red;">Babel Error: ${err}</pre>`;
+  }
 
   return `
 <!DOCTYPE html>
-<html lang="en">
+<html>
   <head>
     <meta charset="UTF-8" />
     <title>React Preview</title>
-    <style>body { margin: 0; font-family: sans-serif; }</style>
+    <style>${css}</style>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
   </head>
   <body>
     <div id="root"></div>
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-    <script type="text/babel" data-type="module">
-      const { useState, useEffect } = React;
-      ${code}
-
-      const rootElement = document.getElementById("root");
-      const root = ReactDOM.createRoot(rootElement);
-      root.render(<App />);
-    </script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script>
+      try {
+        ${transpiledCode}
+        ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App));
+      } catch (e) {
+        document.body.innerHTML = '<pre style="color:red;">' + e + '</pre>';
+      }
+    </script> 
   </body>
-</html>`;
+</html>
+`;
 }
 
-
-export function generateVuePreview(files: File[]): string {
-  const vueFile = files.find(f => f.name.endsWith(".vue"))?.code || "";
-
-  const template = vueFile.match(/<template>([\s\S]*?)<\/template>/)?.[1]?.trim() || `<p>No template found</p>`;
-  const rawScript = vueFile.match(/<script>([\s\S]*?)<\/script>/)?.[1]?.trim();
-
-  const options = rawScript
-    ? rawScript.replace(/^export\s+default\s+{/, '{') // remove export default
-    : '{}';
+export function generatePythonPreview(code: string): string {
+  const escapedCode = code.replace(/`/g, '\\`');
 
   return `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="UTF-8" />
-      <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-      <style>body { font-family: sans-serif; padding: 1rem; }</style>
-    </head>
-    <body>
-      <div id="app"></div>
-      <script type="module">
-        const { createApp } = Vue;
-        const App = {
-          template: \`${template}\`,
-          ${options}
-        };
-        createApp(App).mount("#app");
-      </script>
-    </body>
-    </html>
-  `;
+<!DOCTYPE html>
+<html>
+  <head>
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.23.4/full/pyodide.js"></script>
+    <style>
+      body { font-family: sans-serif; padding: 20px; }
+      #output { white-space: pre-wrap; background: #111; color: #0f0; padding: 10px; margin-top: 10px; border-radius: 6px; }
+    </style>
+  </head>
+  <body>
+    <h3>Python Preview</h3>
+    <div id="output">Running...</div>
+    <script>
+      async function main() {
+        const pyodide = await loadPyodide();
+        try {
+          const output = await pyodide.runPythonAsync(\`${escapedCode}\`);
+          document.getElementById("output").textContent = output !== undefined ? output : "✅ Executed successfully (no output)";
+        } catch (err) {
+          document.getElementById("output").textContent = "❌ Error:\\n" + err;
+        }
+      }
+      main();
+    <\/script>
+  </body>
+</html>
+`;
 }
 
-export function generateJavaPreview(files: File[]): string {
-  const code = files.find(f => f.name.endsWith(".java"))?.code || "";
-
-  return `
-    <!DOCTYPE html>
-    <html>
-    <body>
-      <pre style="white-space: pre-wrap; padding: 1rem; font-family: monospace;">
-${code}
-      </pre>
-    </body>
-    </html>
-  `;
-}

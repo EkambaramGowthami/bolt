@@ -38,17 +38,6 @@ export const Tokens = ({ setgetToken }: any) => {
       return;
     }
 
-    // try {
-    //   const response = await axios.post(`http://localhost:3000/referral/${userId}`, {
-    //     referredBy,
-    //   });
-    //   localStorage.setItem("referredBy", referredBy);
-    //   alert("Referral applied successfully!");
-    //   fetchAllData();
-    // } catch (err: any) {
-    //   console.error("Referral error:", err.response?.data || err.message);
-    //   alert(err.response?.data?.error || "Something went wrong");
-    // }
     if (referredBy) {
       await axios.post(`http://localhost:3000/referral/${userId}`, {
         referredBy

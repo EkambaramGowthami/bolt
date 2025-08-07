@@ -20,6 +20,11 @@ const db_2 = require("./db");
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const nanoid_1 = require("nanoid");
 const authmiddleware_1 = require("./middlewares/authmiddleware");
+const PathMacher_1 = require("./utils/PathMacher");
+const axios_1 = __importDefault(require("axios"));
+const CLIENT_ID = process.env.CLIENT_ID;
+const CLIENT_SECRET = process.env.CLIENT_SECRET;
+const REDIRECT_URI = "http://localhost:3000/api/auth/google/callback";
 const SECRETE = (process.env.SECRETE || "defaultsecrete");
 function extractExplanationAndRequirements(text) {
     const cleanedText = text.replace(/```[\s\S]*?```/g, "").trim();
@@ -38,26 +43,19 @@ function extractExplanationAndRequirements(text) {
         requirements: requirementsText,
     };
 }
-function detectLanguageFromPromptOrFallback(prompt, deepseekCode) {
+function detectLanguageFromPromptOrFallback(prompt) {
     const knownTechs = ["react", "vue", "angular", "node.js", "express", "next.js", "python", "flask", "django", "java", "c++", "typescript", "javascript"];
     const lowerPrompt = prompt.toLowerCase();
     const foundTech = knownTechs.find(tech => lowerPrompt.includes(tech));
     if (foundTech)
         return foundTech;
-    if (deepseekCode.includes("import React"))
-        return "react";
-    if (deepseekCode.includes("from flask import") || deepseekCode.includes("def") && deepseekCode.includes("app.route"))
-        return "flask";
-    if (deepseekCode.includes("class") && deepseekCode.includes("public static void main"))
-        return "java";
-    if (deepseekCode.includes("#include") || deepseekCode.includes("int main()"))
-        return "c++";
-    if (deepseekCode.includes("def") && deepseekCode.includes("print"))
-        return "python";
-    if (deepseekCode.includes("const express = require") || deepseekCode.includes("app.listen"))
-        return "node.js";
-    if (deepseekCode.includes("function") || deepseekCode.includes("console.log"))
-        return "javascript";
+    // if (deepseekCode.includes("import React")) return "react";
+    // if (deepseekCode.includes("from flask import") || deepseekCode.includes("def") && deepseekCode.includes("app.route")) return "flask";
+    // if (deepseekCode.includes("class") && deepseekCode.includes("public static void main")) return "java";
+    // if (deepseekCode.includes("#include") || deepseekCode.includes("int main()")) return "c++";
+    // if (deepseekCode.includes("def") && deepseekCode.includes("print")) return "python";
+    // if (deepseekCode.includes("const express = require") || deepseekCode.includes("app.listen")) return "node.js";
+    // if (deepseekCode.includes("function") || deepseekCode.includes("console.log")) return "javascript";
     return "unknown";
 }
 (0, dotenv_1.config)();
@@ -72,9 +70,17 @@ app.post("/template", (req, res) => __awaiter(void 0, void 0, void 0, function* 
     var _a, _b;
     try {
         console.log("template route is hit");
-        const { prompt } = req.body;
+        let { prompt } = req.body;
         if (!prompt || typeof prompt !== "string") {
             return res.status(400).json({ error: "Prompt is required and must be a string." });
+        }
+        let langauage = "";
+        if (detectLanguageFromPromptOrFallback(prompt) == "unknown") {
+            prompt += "html";
+            langauage = "html";
+        }
+        else {
+            langauage = detectLanguageFromPromptOrFallback(prompt);
         }
         const openrouterRes = yield fetch("https://openrouter.ai/api/v1/chat/completions", {
             method: "POST",
@@ -102,13 +108,13 @@ app.post("/template", (req, res) => __awaiter(void 0, void 0, void 0, function* 
         const result = yield openrouterRes.json();
         const text = ((_b = (_a = result.choices[0]) === null || _a === void 0 ? void 0 : _a.message) === null || _b === void 0 ? void 0 : _b.content) || "";
         console.log(text);
-        const lang = detectLanguageFromPromptOrFallback(prompt, text);
-        const codeBlocks = Array.from(text.matchAll(/```(\w+)?\n([\s\S]*?)```/g)).map((match) => {
+        const codeBlocks = Array.from(text.matchAll(/```(\w+)?\n([\s\S]*?)```/g)).map((match, index) => {
             var _a;
             const groups = match;
             const lang = ((_a = groups[1]) === null || _a === void 0 ? void 0 : _a.toLowerCase()) || "text";
             const code = groups[2].trim();
             const extensionMap = {
+                vue: "vue",
                 javascript: "js",
                 typescript: "ts",
                 tsx: "tsx",
@@ -120,12 +126,11 @@ app.post("/template", (req, res) => __awaiter(void 0, void 0, void 0, function* 
                 text: "txt",
             };
             const extension = extensionMap[lang] || "txt";
-            const matching = code.match(/function\s+(\w+)\s*\(|const\s+(\w+)\s*=\s*\(/);
-            const componentName = (matching === null || matching === void 0 ? void 0 : matching[1]) || (matching === null || matching === void 0 ? void 0 : matching[2]);
             return {
-                name: `${componentName}.${extension}`,
+                name: `file${index + 1}.${extension}`,
                 lang,
                 code,
+                path: (0, PathMacher_1.matchPathFromCodeOrFallback)(code, lang, index),
             };
         });
         const { explanation, requirements } = extractExplanationAndRequirements(text);
@@ -330,6 +335,41 @@ app.post("/spend", (req, res) => __awaiter(void 0, void 0, void 0, function* () 
         else {
             res.status(400).json({ error: "Unknown error occurred" });
         }
+    }
+}));
+app.get("/api/auth/google/callback", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
+    const code = req.query.code;
+    try {
+        const tokenResponse = yield axios_1.default.post("https://oauth2.googleapis.com/token", null, {
+            params: {
+                code,
+                client_id: CLIENT_ID,
+                client_secret: CLIENT_SECRET,
+                redirect_uri: REDIRECT_URI,
+                grant_type: "authorization_code"
+            },
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        });
+        const accessToken = tokenResponse.data.access_token;
+        const userResponse = yield axios_1.default.get("https://www.googleapis.com/oauth2/v2/userinfo", {
+            headers: { "Authorization": `Bearer ${accessToken}` },
+        });
+        const user = userResponse.data;
+        console.log("user data:", user);
+        res.redirect(`http://localhost:5173/dashboard?name=${encodeURIComponent(user.name)}`);
+        // res.send(
+        //   `
+        //   <script>
+        //       window.opener.postMessage(${JSON.stringify(user)},"*");
+        //       window.close();
+        //   </script>
+        //   `
+        // );
+    }
+    catch (err) {
+        const error = err;
+        console.error(((_a = error.response) === null || _a === void 0 ? void 0 : _a.data) || error.message);
     }
 }));
 app.listen(3000, () => {

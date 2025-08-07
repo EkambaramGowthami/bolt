@@ -7,10 +7,6 @@ exports.transactionModel = exports.tokenModel = exports.userModel = exports.zodv
 const dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config();
 const mongoose_1 = __importDefault(require("mongoose"));
-// const mongoUrl = (process.env.MONGOOSE_URL) as string;
-// if (!mongoUrl) {
-//   throw new Error("MONGODB connection string is missing in .env");
-// }
 mongoose_1.default.connect(process.env.MONGOOSE_URL);
 const zod_1 = require("zod");
 exports.zodvalidationSchema = zod_1.z.object({
@@ -20,6 +16,7 @@ exports.zodvalidationSchema = zod_1.z.object({
 });
 const userSchema = new mongoose_1.default.Schema({
     username: { type: String, required: true },
+    googleId: { type: String, unique: true, sparse: true },
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
 });

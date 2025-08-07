@@ -1,9 +1,10 @@
+import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 const SECRETE = (process.env.SECRETE || "defaultsecrete") as string;
 
 
 
-export const authmeddleware = async (req:any,res:any,next:any) => {
+export const authmeddleware = async (req:Request,res:Response,next:NextFunction) => {
     const authHeader=req.headers.authorization;
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
         return res.status(401).json({ message: "Token missing or invalid" });

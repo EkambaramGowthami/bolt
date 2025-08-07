@@ -2,7 +2,16 @@ import axios from "axios";
 import { useRef } from "react"
 import { useNavigate } from "react-router-dom";
 
-export const Signup = ({setSignupButton}:any) =>{
+export const Signup = () =>{
+  const GOOGLE_CLIENT_ID = "349188853630-193s9ons6j30haa66d8iclg7rgvjhc44.apps.googleusercontent.com";
+  const REDIRECT_URI = "http://localhost:3000/api/auth/google/callback";
+  const handleSigninWithGoogle = ()=>{
+    const scope = encodeURIComponent("email profile");
+    const url = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${GOOGLE_CLIENT_ID}&redirect_uri=${REDIRECT_URI}&response_type=code&scope=${scope}`;
+
+    window.location.href = url; 
+
+  }
   const navigate=useNavigate();
     const userRef=useRef();
     const emailRef=useRef();
@@ -27,13 +36,10 @@ export const Signup = ({setSignupButton}:any) =>{
           });
       
           localStorage.setItem("token", response.data.token);
+          localStorage.setItem("username",username);
           console.log("signup success", response.data);
-          navigate("/dashboard");
-          
-      
-          
-          
-        } catch (error) {
+          navigate(`/dashboard?name=${encodeURIComponent(username)}`);
+          } catch (error) {
           console.error("Signup error:", error);
           alert("Signup failed. Check the console for details.");
         }
@@ -50,6 +56,10 @@ export const Signup = ({setSignupButton}:any) =>{
                <div><input type="text" placeholder="email" className="px-12 py-2 rounded" ref={emailRef} /></div>
                <div><input type="text" placeholder="password" className="px-12 py-2 rounded"  ref={passwordRef} /></div>
                <div><button className="bg-blue-500 text-white font-md px-4 py-2 rounded" onClick={handleOnClick}>Create Account</button></div>
+               <div onClick={handleSigninWithGoogle} className="text-white flex justify-center items-center">
+                <div><img src="/7123025_logo_google_g_icon.png" /></div>
+                <div>signin with google</div>
+                </div>
             </div>
         </div>
       </div>
