@@ -3,7 +3,7 @@ import { useRef } from "react"
 import { useNavigate } from "react-router-dom";
 
 export const Signup = () =>{
-  const GOOGLE_CLIENT_ID = "349188853630-193s9ons6j30haa66d8iclg7rgvjhc44.apps.googleusercontent.com";
+  const GOOGLE_CLIENT_ID=process.env.GOOGLE_CLIENT_ID!
   const REDIRECT_URI = "http://localhost:3000/api/auth/google/callback";
   const handleSigninWithGoogle = ()=>{
     const scope = encodeURIComponent("email profile");
