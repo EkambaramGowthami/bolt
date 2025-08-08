@@ -26,6 +26,9 @@ export function generateUniversalPreview(
   const jsxFile = files.find(
     f => f.name.endsWith(".jsx") || f.name.endsWith(".tsx")
   );
+  if (!jsxFile) {
+  return `<html><body><pre style="color:red;">No JSX/TSX file found.</pre></body></html>`;
+}
 
   switch (detectedType) {
     
