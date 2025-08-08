@@ -1,6 +1,11 @@
 import axios from "axios";
 import { useRef, useState } from "react";
 import { jwtDecode } from "jwt-decode";
+interface DecodedToken {
+  exp: number;
+  iat: number;
+  [key: string]: any; 
+}
 
 
 export const Signin = () =>{
@@ -10,9 +15,9 @@ export const Signin = () =>{
       const passwordRef = useRef<HTMLInputElement>(null);
     const handleOnClick = async () =>{
        
-        const username=userRef.current?.value;
-        const email=emailRef.current?.value;
-        const password=passwordRef.current?.value;
+        const username=userRef.current?.value ?? "";
+        const email=emailRef.current?.value ?? "";
+        const password=passwordRef.current?.value ?? "";
         try{
             const response = await axios.post("https://bolt-backend-d3qn.onrender.com/signin",{
             username,
@@ -21,7 +26,7 @@ export const Signin = () =>{
         })
         localStorage.setItem("token", response.data.token);
         localStorage.setItem("username",username);
-        const decoded: any = jwtDecode(response.data.token);
+        const decoded:DecodedToken  = jwtDecode(response.data.token);
         console.log("signin success",response.data);
        
         }
