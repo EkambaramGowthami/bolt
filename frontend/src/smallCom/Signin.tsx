@@ -1,11 +1,7 @@
 import axios from "axios";
 import { useRef, useState } from "react";
 import { jwtDecode } from "jwt-decode";
-interface DecodedToken {
-  exp: number;
-  iat: number;
-  [key: string]: any; 
-}
+
 
 
 export const Signin = () =>{
@@ -13,7 +9,7 @@ export const Signin = () =>{
      const userRef = useRef<HTMLInputElement>(null);
       const emailRef = useRef<HTMLInputElement>(null);
       const passwordRef = useRef<HTMLInputElement>(null);
-    const handleOnClick = async () =>{
+      const handleOnClick = async () =>{
        
         const username=userRef.current?.value ?? "";
         const email=emailRef.current?.value ?? "";
@@ -26,7 +22,6 @@ export const Signin = () =>{
         })
         localStorage.setItem("token", response.data.token);
         localStorage.setItem("username",username);
-        const decoded:DecodedToken  = jwtDecode(response.data.token);
         console.log("signin success",response.data);
        
         }
@@ -38,7 +33,7 @@ export const Signin = () =>{
     }
     return (
         <div className="w-screen h-screen bg-[#0E0E10] flex flex-col justify-center items-center text-center " >
-            <div onMouseLeave={()=>setSigninButton(false)} className="bg-[#333333] bg-opacity-50 rounded-lg shadow-lg  p-4 space-y-4">
+            <div className="bg-[#333333] bg-opacity-50 rounded-lg shadow-lg  p-4 space-y-4">
             <div className="flex justify-center items-center font-md text-3xl text-white">
                 Signin
             </div>
