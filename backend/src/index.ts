@@ -209,7 +209,7 @@ app.get("/api/auth/google/callback",async (req: Request, res: Response)=>{
     });
     const user=userResponse.data;
     console.log("user data:",user);
-    res.redirect(`http://localhost:5173/dashboard?name=${encodeURIComponent(user.name)}`);
+    res.redirect(`https://zentra-frontend-tw0j.onrender.com/dashboard?name=${encodeURIComponent(user.name)}`);
 
   }
   catch(err){
