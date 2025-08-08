@@ -3,7 +3,7 @@
 // import { Bolt, Gift, X } from "lucide-react";
 // import { Group } from "../symbols/Goup";
 
-export const Tokens = ({ setgetToken }: any) => {
+export const Tokens = () => {
   // const referredByRef = useRef<HTMLInputElement>(null);
   // const userId = localStorage.getItem("userId");
 
