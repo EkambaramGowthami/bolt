@@ -1,12 +1,11 @@
 import express from "express";
 import { config } from "dotenv";
 import cors from "cors";
-import { tokenModel, transactionModel, zodvalidationSchema } from "./db";
+import { tokenModel, zodvalidationSchema } from "./db";
 import { userModel } from "./db";
 import jwt from "jsonwebtoken";
 import { Response,Request } from "express";
 import { authmeddleware } from "./middlewares/authmiddleware";
-import { matchPathFromCodeOrFallback } from "./utils/PathMacher";
 import axios from "axios";
 
 const CLIENT_ID=process.env.CLIENT_ID!;
