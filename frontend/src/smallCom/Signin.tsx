@@ -5,9 +5,9 @@ import { jwtDecode } from "jwt-decode";
 
 export const Signin = () =>{
     const [error,setError]=useState(false);
-    const userRef=useRef();
-    const emailRef=useRef();
-    const passwordRef=useRef();
+     const userRef = useRef<HTMLInputElement>(null);
+      const emailRef = useRef<HTMLInputElement>(null);
+      const passwordRef = useRef<HTMLInputElement>(null);
     const handleOnClick = async () =>{
        
         const username=userRef.current?.value;
@@ -22,10 +22,6 @@ export const Signin = () =>{
         localStorage.setItem("token", response.data.token);
         localStorage.setItem("username",username);
         const decoded: any = jwtDecode(response.data.token);
-        console.log(decoded.username);
-        setUsername(decoded.username);
-        
-        setSigninButton(false);
         console.log("signin success",response.data);
        
         }
