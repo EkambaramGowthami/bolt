@@ -6,6 +6,17 @@ import { MonacoViewer } from "../smallCom/MonacoViewer";
 import { generatePythonPreview, generateReactPreview, generateUniversalPreview } from "../preview";
 import { Check, Copy } from "lucide-react";
 import { LoaderFive } from "./ui/loader";
+interface FileData {
+  name: string;
+  code: string;
+  lang: string;
+}
+
+interface ApiResponse {
+  files: FileData[];
+  explanation: string;
+  requirements?: string[];
+}
 
 const knownTechnologies = [
   "html", "css", "javascript", "react", "vue", "angular",
@@ -42,8 +53,8 @@ export const SearchElement = () => {
   let { prompt: initialPrompt } = useParams();
   const [promptInput, setPromptInput] = useState("");
   const [promptHistory, setPromptHistory] = useState([initialPrompt]);
-  const [data, setData] = useState(null);
-  const [selectedFile, setSelectedFile] = useState(null);
+ const [data, setData] = useState<ApiResponse | null>(null);
+ const [selectedFile, setSelectedFile] = useState<FileData | null>(null);
   const [tab, setTab] = useState("code");
   const [explanation, setExplanation] = useState("");
   const [requirements, setRequirements] = useState([]);
@@ -91,9 +102,10 @@ export const SearchElement = () => {
     }
   }, []);
   const handlePrompt = () => {
-    const input = promptRef.current?.value.trim();
-    setPromptInput(input);
-    if (input) {
+    if (promptRef.current && promptRef.current.value) {
+      const input = promptRef.current.value.trim();
+      setPromptInput(input);
+      if (input) {
       const updatedHistory = [...promptHistory, input];
       setPromptHistory(updatedHistory);
       const fullPrompt = updatedHistory.join("\n");
@@ -101,6 +113,7 @@ export const SearchElement = () => {
       promptRef.current.value = "";
     }
 
+  }
   }
 
 
@@ -131,7 +144,7 @@ export const SearchElement = () => {
             <div className="flex h-full">
               <div className="w-1/4 border-0 overflow-auto bg-[#242424]  shadow-2xl">
                 {
-                  data.files.map((file) => (
+                  data.files.map((file:FileData) => (
                     <div 
                       key={file.name} 
                       className={`p-2 cursor-pointer text-white ${selectedFile?.name === file.name ? "text-white  bg-[#333333] " : "text-white"}`}
