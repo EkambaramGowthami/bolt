@@ -3,7 +3,7 @@ import { useRef, useState } from "react";
 import { jwtDecode } from "jwt-decode";
 
 
-export const Signin = ({setSigninButton,setUsername}:any) =>{
+export const Signin = () =>{
     const [error,setError]=useState(false);
     const userRef=useRef();
     const emailRef=useRef();
