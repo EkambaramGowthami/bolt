@@ -20,7 +20,7 @@ export const Pricing = () => {
     const [seven,setSeven]=useState(false);
     const navigate = useNavigate ();
     const [username,setUsername]=useState<string | null>(null);
-    const handleCancel = (e:React.FormEvent<HTMLFormElement>) => {
+    const handleCancel = (e:React.MouseEvent<HTMLDivElement>) => {
         e.preventDefault();
         navigate("/dashboard");
       };
