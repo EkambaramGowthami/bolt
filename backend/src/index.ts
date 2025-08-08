@@ -41,8 +41,6 @@ function detectLanguageFromPromptOrFallback(prompt: string): string {
 
 
 
-config();
-
 const app = express();
 app.use(express.json());
 app.use(cors());
@@ -51,7 +49,7 @@ if (!apiKey) {
   throw new Error("Missing Google API key in environment variables");
 }
 
-
+// @ts-ignore
 app.post("/template", async (req: Request, res: Response) => {
   try {
     console.log("template route is hit");
@@ -135,7 +133,7 @@ app.post("/template", async (req: Request, res: Response) => {
   }
 });
 
-
+// @ts-ignore
 app.post("/signup", async (req: Request, res: Response) => {
   try {
     const validation = zodvalidationSchema.parse(req.body);
@@ -173,15 +171,6 @@ app.post("/signin", async (req: Request, res: Response) => {
     })
   }
 })
-app.delete("/signout", authmeddleware, async (req: any, res: any) => {
-  const user = (req as any).user;
-  await userModel.deleteOne({ email: user.email });
-  return res.status(200).json({
-    message: `User ${user.email} signed out successfully`,
-  });
-})
-
-
 app.get("/user/:userId", async (req: Request, res: Response) => {
   try {
     const user = await userModel.findById(req.params.userId);

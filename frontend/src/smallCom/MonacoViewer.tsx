@@ -1,7 +1,10 @@
 
 import Editor from "@monaco-editor/react";
-
-export const MonacoViewer = ({ code, language }) => {
+interface typeCode {
+  code:string,
+  language:string
+}
+export const MonacoViewer = ({ code, language }:typeCode) => {
   return (
     <Editor
       height="500px"

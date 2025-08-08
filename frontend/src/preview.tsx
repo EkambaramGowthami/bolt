@@ -60,7 +60,7 @@ export function generateUniversalPreview(
           return `<html><body><pre style="color:red;">No .vue file found.</pre></body></html>`;
         }
         console.log("Script Code:", scriptCode);
-console.log("Window.App:", window.App);
+
 
         return `
         <!DOCTYPE html>
@@ -219,9 +219,9 @@ export function generatePythonPreview(code: string): string {
         const pyodide = await loadPyodide();
         try {
           const output = await pyodide.runPythonAsync(\`${escapedCode}\`);
-          document.getElementById("output").textContent = output !== undefined ? output : "✅ Executed successfully (no output)";
+          document.getElementById("output").textContent = output !== undefined ? output : "Executed successfully (no output)";
         } catch (err) {
-          document.getElementById("output").textContent = "❌ Error:\\n" + err;
+          document.getElementById("output").textContent = " Error:\\n" + err;
         }
       }
       main();

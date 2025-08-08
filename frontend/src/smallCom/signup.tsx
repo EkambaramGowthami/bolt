@@ -13,9 +13,9 @@ export const Signup = () =>{
 
   }
   const navigate=useNavigate();
-    const userRef=useRef();
-    const emailRef=useRef();
-    const passwordRef=useRef();
+    const userRef=useRef<HTMLInputElement | null>(null);
+    const emailRef=useRef<HTMLInputElement | null>(null);
+    const passwordRef=useRef<HTMLInputElement | null>(null);
     const handleOnClick = async () => {
         const username = userRef.current?.value;
         const email = emailRef.current?.value;

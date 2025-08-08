@@ -13,14 +13,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
-const dotenv_1 = require("dotenv");
 const cors_1 = __importDefault(require("cors"));
 const db_1 = require("./db");
 const db_2 = require("./db");
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
-const nanoid_1 = require("nanoid");
-const authmiddleware_1 = require("./middlewares/authmiddleware");
-const PathMacher_1 = require("./utils/PathMacher");
 const axios_1 = __importDefault(require("axios"));
 const CLIENT_ID = process.env.CLIENT_ID;
 const CLIENT_SECRET = process.env.CLIENT_SECRET;
@@ -49,16 +45,8 @@ function detectLanguageFromPromptOrFallback(prompt) {
     const foundTech = knownTechs.find(tech => lowerPrompt.includes(tech));
     if (foundTech)
         return foundTech;
-    // if (deepseekCode.includes("import React")) return "react";
-    // if (deepseekCode.includes("from flask import") || deepseekCode.includes("def") && deepseekCode.includes("app.route")) return "flask";
-    // if (deepseekCode.includes("class") && deepseekCode.includes("public static void main")) return "java";
-    // if (deepseekCode.includes("#include") || deepseekCode.includes("int main()")) return "c++";
-    // if (deepseekCode.includes("def") && deepseekCode.includes("print")) return "python";
-    // if (deepseekCode.includes("const express = require") || deepseekCode.includes("app.listen")) return "node.js";
-    // if (deepseekCode.includes("function") || deepseekCode.includes("console.log")) return "javascript";
     return "unknown";
 }
-(0, dotenv_1.config)();
 const app = (0, express_1.default)();
 app.use(express_1.default.json());
 app.use((0, cors_1.default)());
@@ -66,6 +54,7 @@ const apiKey = process.env.CLAUD_API_KEY;
 if (!apiKey) {
     throw new Error("Missing Google API key in environment variables");
 }
+// @ts-ignore
 app.post("/template", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b;
     try {
@@ -130,7 +119,6 @@ app.post("/template", (req, res) => __awaiter(void 0, void 0, void 0, function* 
                 name: `file${index + 1}.${extension}`,
                 lang,
                 code,
-                path: (0, PathMacher_1.matchPathFromCodeOrFallback)(code, lang, index),
             };
         });
         const { explanation, requirements } = extractExplanationAndRequirements(text);
@@ -141,49 +129,7 @@ app.post("/template", (req, res) => __awaiter(void 0, void 0, void 0, function* 
         res.status(500).json({ error: "Failed to generate template" });
     }
 }));
-app.post("/referral/:userId", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    try {
-        const { referredBy } = req.body;
-        const userId = req.params.userId;
-        const tokens = yield db_1.tokenModel.findOne({ userId });
-        if (!tokens)
-            return res.status(404).json({ error: "User token not found" });
-        if (!tokens.referralCode) {
-            let uniqueCode;
-            do {
-                uniqueCode = (0, nanoid_1.nanoid)(6);
-            } while (yield db_1.tokenModel.findOne({ referralCode: uniqueCode }));
-            tokens.referralCode = uniqueCode;
-        }
-        if (referredBy &&
-            referredBy !== tokens.referralCode &&
-            referredBy !== tokens.referredBy) {
-            const referrerToken = yield db_1.tokenModel.findOne({ referralCode: referredBy });
-            if (!referrerToken) {
-                return res.status(400).json({ error: "Invalid referral code" });
-            }
-            tokens.referredBy = referredBy;
-            const bonus = 20;
-            referrerToken.free += bonus;
-            referrerToken.total += bonus;
-            yield referrerToken.save();
-            yield db_1.transactionModel.create({
-                userId: referrerToken.userId,
-                type: "referral",
-                amount: bonus,
-            });
-        }
-        yield tokens.save();
-        return res.status(200).json({
-            message: "Referral applied successfully",
-            referralCode: tokens.referralCode,
-        });
-    }
-    catch (err) {
-        console.error("Referral error:", err);
-        return res.status(500).json({ error: "Internal server error" });
-    }
-}));
+// @ts-ignore
 app.post("/signup", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const validation = db_1.zodvalidationSchema.parse(req.body);
@@ -218,35 +164,6 @@ app.post("/signin", (req, res) => __awaiter(void 0, void 0, void 0, function* ()
         });
     }
 }));
-app.delete("/signout", authmiddleware_1.authmeddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const user = req.user;
-    yield db_2.userModel.deleteOne({ email: user.email });
-    return res.status(200).json({
-        message: `User ${user.email} signed out successfully`,
-    });
-}));
-// app.post("/token/init", async (req: any, res: any) => {
-//   const { userId } = req.body;
-//   if (!userId) {
-//     return res.status(400).json({ error: "userId is required" });
-//   }
-//   try {
-//     const existing = await tokenModel.findOne({ userId });
-//     if (!existing) {
-//       const newModel = new tokenModel({
-//         userId,
-//         free: 10,
-//         total: 10,
-//         // referralCode not set here unless you want to assign a unique one
-//       });
-//       await newModel.save();
-//     }
-//     res.status(200).json({ message: "Token initialized" });
-//   } catch (err: any) {
-//     console.error("Error in /token/init:", err);
-//     res.status(500).json({ error: "Internal server error", details: err.message });
-//   }
-// });
 app.get("/user/:userId", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const user = yield db_2.userModel.findById(req.params.userId);
@@ -263,78 +180,6 @@ app.get("/token/:userId", (req, res) => __awaiter(void 0, void 0, void 0, functi
     }
     catch (e) {
         res.status(404).json({ error: "Token data not found" });
-    }
-}));
-app.get("/transactions/:userId", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    try {
-        const txs = yield db_1.transactionModel.find({ userId: req.params.userId }).sort({ createdAt: -1 });
-        res.status(200).json(txs);
-    }
-    catch (err) {
-        res.status(400).json({ error: "error message" });
-    }
-}));
-app.post("/buy", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    try {
-        const { userId, amount } = req.body;
-        const tokens = yield db_1.tokenModel.findOne({ userId });
-        if (!tokens) {
-            return res.status(404).json({ error: "Token record not found for this user" });
-        }
-        tokens.paid += amount;
-        tokens.total += amount;
-        yield tokens.save();
-        yield db_1.transactionModel.create({
-            userId,
-            type: "purchase",
-            amount,
-        });
-        res.status(200).json({ message: "Tokens purchased", tokens });
-    }
-    catch (err) {
-        if (err instanceof Error) {
-            res.status(400).json({ error: err.message });
-        }
-        else {
-            res.status(400).json({ error: "Unknown error" });
-        }
-    }
-}));
-app.post("/spend", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    try {
-        const { userId, amount } = req.body;
-        const tokens = yield db_1.tokenModel.findOne({ userId });
-        if (!tokens) {
-            return res.status(404).json({ error: "Token record not found" });
-        }
-        if (tokens.total < amount) {
-            return res.status(400).json({ error: "Not enough tokens" });
-        }
-        let remaining = amount;
-        if (tokens.paid >= remaining) {
-            tokens.paid -= remaining;
-        }
-        else {
-            remaining -= tokens.paid;
-            tokens.paid = 0;
-            tokens.free -= remaining;
-        }
-        tokens.total -= amount;
-        yield tokens.save();
-        yield db_1.transactionModel.create({
-            userId,
-            type: "spend",
-            amount
-        });
-        res.status(200).json({ message: "Tokens spent", tokens });
-    }
-    catch (err) {
-        if (err instanceof Error) {
-            res.status(400).json({ error: err.message });
-        }
-        else {
-            res.status(400).json({ error: "Unknown error occurred" });
-        }
     }
 }));
 app.get("/api/auth/google/callback", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -358,14 +203,6 @@ app.get("/api/auth/google/callback", (req, res) => __awaiter(void 0, void 0, voi
         const user = userResponse.data;
         console.log("user data:", user);
         res.redirect(`http://localhost:5173/dashboard?name=${encodeURIComponent(user.name)}`);
-        // res.send(
-        //   `
-        //   <script>
-        //       window.opener.postMessage(${JSON.stringify(user)},"*");
-        //       window.close();
-        //   </script>
-        //   `
-        // );
     }
     catch (err) {
         const error = err;
