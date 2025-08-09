@@ -3,8 +3,8 @@ import { useRef } from "react"
 import { useNavigate } from "react-router-dom";
 
 export const Signup = () =>{
-  const GOOGLE_CLIENT_ID=process.env.GOOGLE_CLIENT_ID!
-  const REDIRECT_URI = "https://bolt-backend-d3qn.onrender.com/api/auth/google/callback";
+  const GOOGLE_CLIENT_ID=import.meta.env.GOOGLE_CLIENT_ID!
+  const REDIRECT_URI = "https://bolt-backend-o1vr.onrender.com/api/auth/google/callback";
   const handleSigninWithGoogle = ()=>{
     const scope = encodeURIComponent("email profile");
     const url = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${GOOGLE_CLIENT_ID}&redirect_uri=${REDIRECT_URI}&response_type=code&scope=${scope}`;
@@ -29,7 +29,7 @@ export const Signup = () =>{
         }
       
         try {
-          const response = await axios.post("http://localhost:3000/signup", {
+          const response = await axios.post("https://bolt-backend-o1vr.onrender.com/signup", {
             username,
             email,
             password,
