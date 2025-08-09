@@ -66,7 +66,7 @@ export const SearchElement = () => {
       const techs = extractOf([combinedPrompt]);
      const language=getPrimaryLanguage(techs);
 
-      const res = await axios.post("https://bolt-backend-d3qn.onrender.com/template", { prompt: combinedPrompt });
+      const res = await axios.post("https://bolt-backend-o1vr.onrender.com/template", { prompt: combinedPrompt });
       const result = res.data;
       setData(result);
 
