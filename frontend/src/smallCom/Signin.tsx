@@ -3,7 +3,7 @@ import { useRef, useState } from "react";
 import { jwtDecode } from "jwt-decode";
 
 
-export const Signin = ({setSigninButton,setUsername}:any) =>{
+export const Signin = () =>{
     const [error,setError]=useState(false);
     const userRef=useRef();
     const emailRef=useRef();
@@ -21,11 +21,9 @@ export const Signin = ({setSigninButton,setUsername}:any) =>{
         })
         localStorage.setItem("token", response.data.token);
         localStorage.setItem("username",username);
-        const decoded: any = jwtDecode(response.data.token);
-        console.log(decoded.username);
-        setUsername(decoded.username);
         
-        setSigninButton(false);
+        
+       
         console.log("signin success",response.data);
        
         }
@@ -37,7 +35,7 @@ export const Signin = ({setSigninButton,setUsername}:any) =>{
     }
     return (
         <div className="w-screen h-screen bg-[#0E0E10] flex flex-col justify-center items-center text-center " >
-            <div onMouseLeave={()=>setSigninButton(false)} className="bg-[#333333] bg-opacity-50 rounded-lg shadow-lg  p-4 space-y-4">
+            <div className="bg-[#333333] bg-opacity-50 rounded-lg shadow-lg  p-4 space-y-4">
             <div className="flex justify-center items-center font-md text-3xl text-white">
                 Signin
             </div>

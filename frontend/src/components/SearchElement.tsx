@@ -106,46 +106,53 @@ export const SearchElement = () => {
 
 
 
-  if (!data) return <div className="mt-0 bg-[#0E0E10] relative top-0 w-screen h-screen text-white text-xl flex justify-center items-center "><LoaderFive text="Generating code..." /></div>;
+  if (!data) return <div className="mt-0 bg-[#0E0E10] relative top-0 w-screen h-screen text-white text-xl flex justify-center items-center space-x-6 "><LoaderFive text="Generating code..." /></div>;
 
   return (
-    <div className="flex h-screen">
-      <div className="w-[820px]  shadow p-4 flex flex-col bg-[#0E0E10] ">
-        <div className="flex gap-4 mb-4 bg-[#0E0E10]">
+    <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] min-h-screen lg:h-screen">
+    
+      <div className="flex flex-col bg-[#0E0E10] shadow p-4 overflow-hidden lg:overflow-auto">
+        <div className="flex gap-4 mb-4">
           <button
             onClick={() => setTab("code")}
-            className={`px-4 py-2 rounded ${tab === "code" ? "bg-blue-600 text-white" : "text-blue-600"}`}
+            className={`px-4 py-2 rounded ${
+              tab === "code" ? "bg-blue-600 text-white" : "text-blue-600"
+            }`}
           >
             Code
           </button>
           <button
             onClick={() => setTab("preview")}
-            className={`px-4 py-2 rounded ${tab === "preview" ? "bg-blue-600 text-white" : "text-blue-600"}`}
+            className={`px-4 py-2 rounded ${
+              tab === "preview" ? "bg-blue-600 text-white" : "text-blue-600"
+            }`}
           >
             Preview
           </button>
         </div>
-
-        <div className="flex-1 bg-[#0E0E10] overflow-auto border-0 rounded shadow-2xl border-l-4 border-l-[#333333]">
+  
+        <div className="flex-1 overflow-auto border-0 rounded shadow-2xl border-l-4 border-l-[#333333]">
           {tab === "code" ? (
             <div className="flex h-full">
-              <div className="w-1/4 border-0 overflow-auto bg-[#242424]  shadow-2xl">
-                {
-                  data.files.map((file) => (
-                    <div 
-                      key={file.name} 
-                      className={`p-2 cursor-pointer text-white ${selectedFile?.name === file.name ? "text-white  bg-[#333333] " : "text-white"}`}
+             
+              <div className="w-1/5 overflow-auto bg-[#242424] shadow-2xl">
+                {data.files.map((file) => (
+                  <div
+                    key={file.name}
+                    className={`p-2 cursor-pointer ${
+                      selectedFile?.name === file.name
+                        ? "bg-[#333333] text-white"
+                        : "text-white"
+                    }`}
                     onClick={() => setSelectedFile(file)}
                   >
                     {file.name}
                   </div>
-                  ))
-                }
-                
+                ))}
               </div>
-
-              <div className="text-white  w-full p-2 overflow-auto relative">
-
+  
+              
+              <div className="flex-1 p-2 overflow-auto relative bg-[#242424] rounded">
                 <button
                   onClick={() => {
                     if (selectedFile?.code) {
@@ -153,25 +160,25 @@ export const SearchElement = () => {
                       setCopy(!copy);
                     }
                   }}
-                  className="absolute text-white space-x-2 top-2 right-2 bg-[#333333] text-white px-2 py-1 rounded hover:[#333333] bg-opacity-50"
+                  className="absolute top-2 right-2 bg-[#333333] px-2 py-1 rounded bg-opacity-50"
                   title="Copy to clipboard"
                 >
-                  {
-                    copy === true ? (
-                        <div className="flex items-center space-x-4">
-                          <Check size={14} />
-                          copied
-
-                        </div>
-                    ):(
-                      <Copy size={14} />
-
-                    )
-                  }
+                  {copy ? (
+                    <div className="flex items-center space-x-2">
+                      <Check size={14} />
+                      copied
+                    </div>
+                  ) : (
+                    <Copy size={14} />
+                  )}
                 </button>
-
-                <pre className="pt-6 text-white bg-[#242424] rounded h-full whitespace-pre-wrap">
-                    {selectedFile?.code && <MonacoViewer code={selectedFile.code} language={selectedFile.lang} />}
+                <pre className="pt-6 whitespace-pre-wrap">
+                  {selectedFile?.code && (
+                    <MonacoViewer
+                      code={selectedFile.code}
+                      language={selectedFile.lang}
+                    />
+                  )}
                 </pre>
               </div>
             </div>
@@ -180,47 +187,47 @@ export const SearchElement = () => {
               srcDoc={previewHtml}
               ref={iframeRef}
               title="Preview"
-              className="w-full h-full border-0 rounded "
+              className="w-full h-full border-0 rounded"
               sandbox="allow-scripts"
-            >
-              Your browser does not support iframes.
-            </iframe>
-
+            />
           )}
-
         </div>
-
       </div>
-      <div className="flex-1 bg-[#0E0E10] text-white p-6 overflow-auto relative ">
-        <div className="mt-12">
-
-
+  
+      <div className="flex flex-col bg-[#0E0E10] text-white p-6 overflow-hidden lg:overflow-auto">
+        <div className="flex-1 overflow-auto">
           <h2 className="text-xl font-bold mb-4">🧠 Explanation</h2>
-          <p className="text-sm whitespace-pre-wrap space-y-2 ">{explanation}</p>
-          <div className="flex justify-end">
-            <div className="text-right py-2 p-2 rounded-lg shadow-xl">{promptInput}</div>
+          <p className="text-sm whitespace-pre-wrap">{explanation}</p>
+  
+          <div className="flex justify-end mt-4">
+            <div className="text-right py-2 p-2 rounded-lg shadow-xl">
+              {promptInput}
+            </div>
           </div>
-
+  
           {requirements.length > 0 && (
             <>
               <h3 className="text-lg font-semibold mt-6 mb-2">⚙️ Requirements</h3>
               <ul className="list-disc list-inside text-sm">
                 {requirements.map((req, index) => (
-                  <li key={index} className="mb-1">{req}</li>
+                  <li key={index}>{req}</li>
                 ))}
               </ul>
             </>
           )}
-
-
         </div>
-
-        <div className="mt-96 flex gap-8 items-center">
-          <input type="text" className="px-12 py-4 bg-[#333333] shadow-lg rounded-xl" placeholder="How can I help you ?" ref={promptRef}  />
-          <div onClick={handlePrompt}><Send /></div>
+        <div className="mt-6 flex gap-4 items-center">
+          <input
+            type="text"
+            className="flex-1 px-4 py-3 bg-[#333333] shadow-lg rounded-xl"
+            placeholder="How can I help you ?"
+            ref={promptRef}
+          />
+          <button onClick={handlePrompt}>
+            <Send />
+          </button>
         </div>
       </div>
-
     </div>
   );
-};
+}  

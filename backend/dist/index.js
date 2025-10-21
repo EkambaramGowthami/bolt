@@ -13,11 +13,14 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
+const dotenv_1 = require("dotenv");
 const cors_1 = __importDefault(require("cors"));
 const db_1 = require("./db");
 const db_2 = require("./db");
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const axios_1 = __importDefault(require("axios"));
+const redisClient_1 = __importDefault(require("./redisClient"));
+(0, dotenv_1.config)();
 const CLIENT_ID = process.env.CLIENT_ID;
 const CLIENT_SECRET = process.env.CLIENT_SECRET;
 const REDIRECT_URI = "http://localhost:3000/api/auth/google/callback";
@@ -54,6 +57,7 @@ const apiKey = process.env.CLAUD_API_KEY;
 if (!apiKey) {
     throw new Error("Missing Google API key in environment variables");
 }
+console.log(apiKey);
 // @ts-ignore
 app.post("/template", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b;
@@ -62,6 +66,12 @@ app.post("/template", (req, res) => __awaiter(void 0, void 0, void 0, function* 
         let { prompt } = req.body;
         if (!prompt || typeof prompt !== "string") {
             return res.status(400).json({ error: "Prompt is required and must be a string." });
+        }
+        const cacheKey = `template:${prompt}`;
+        const cacheResponse = yield redisClient_1.default.get(cacheKey);
+        if (cacheResponse) {
+            console.log("cache hit");
+            return res.json(JSON.parse(cacheResponse));
         }
         let langauage = "";
         if (detectLanguageFromPromptOrFallback(prompt) == "unknown") {
@@ -122,7 +132,9 @@ app.post("/template", (req, res) => __awaiter(void 0, void 0, void 0, function* 
             };
         });
         const { explanation, requirements } = extractExplanationAndRequirements(text);
-        res.json({ files: codeBlocks, explanation, requirements });
+        const responsePayload = { files: codeBlocks, explanation, requirements };
+        yield redisClient_1.default.setEx(cacheKey, 3600, JSON.stringify(responsePayload));
+        res.json(responsePayload);
     }
     catch (error) {
         console.error("Error generating template:", error);

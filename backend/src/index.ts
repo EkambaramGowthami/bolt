@@ -7,7 +7,9 @@ import jwt from "jsonwebtoken";
 import { Response,Request } from "express";
 import { authmeddleware } from "./middlewares/authmiddleware";
 import axios from "axios";
-
+import { Console } from "console";
+import redisClient from "./redisClient";
+config();
 const CLIENT_ID=process.env.CLIENT_ID!;
 const CLIENT_SECRET=process.env.CLIENT_SECRET!;
 const REDIRECT_URI="http://localhost:3000/api/auth/google/callback";
@@ -48,6 +50,7 @@ const apiKey = process.env.CLAUD_API_KEY;
 if (!apiKey) {
   throw new Error("Missing Google API key in environment variables");
 }
+console.log(apiKey);
 
 // @ts-ignore
 app.post("/template", async (req: Request, res: Response) => {
@@ -58,6 +61,13 @@ app.post("/template", async (req: Request, res: Response) => {
     if (!prompt || typeof prompt !== "string") {
       return res.status(400).json({ error: "Prompt is required and must be a string." });
     }
+    const cacheKey = `template:${prompt}`;
+    const cacheResponse = await redisClient.get(cacheKey);
+    if(cacheResponse){
+      console.log("cache hit");
+      return res.json(JSON.parse(cacheResponse));
+    }
+
     let langauage = "";
     if(detectLanguageFromPromptOrFallback(prompt) == "unknown"){
       prompt += "html";
@@ -126,7 +136,9 @@ app.post("/template", async (req: Request, res: Response) => {
       };
     });
     const { explanation, requirements } = extractExplanationAndRequirements(text);
-    res.json({ files: codeBlocks, explanation, requirements });
+    const responsePayload = {files:codeBlocks,explanation,requirements};
+    await redisClient.setEx(cacheKey,3600,JSON.stringify(responsePayload));
+    res.json(responsePayload);
   } catch (error) {
     console.error("Error generating template:", error);
     res.status(500).json({ error: "Failed to generate template" });
