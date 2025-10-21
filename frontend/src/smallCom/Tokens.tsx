@@ -6,7 +6,7 @@ import { Group } from "../symbols/Goup";
 export const Tokens = ({ setgetToken }: any) => {
   const referredByRef = useRef<HTMLInputElement>(null);
   const userId = localStorage.getItem("userId");
-
+  const backendUrl = import.meta.env.BACKEND_URL!;
   const [user, setUser] = useState<any>(null);
   const [tokens, setTokens] = useState<any>(null);
   const [transaction, setTransaction] = useState<any>([]);
@@ -14,9 +14,9 @@ export const Tokens = ({ setgetToken }: any) => {
   const fetchAllData = async () => {
     try {
       const [userRes, tokenRes, transactionRes] = await Promise.all([
-        axios.get(`http://localhost:3000/user/${userId}`),
-        axios.get(`http://localhost:3000/token/${userId}`),
-        axios.get(`http://localhost:3000/transactions/${userId}`),
+        axios.get(`${backendUrl}/user/${userId}`),
+        axios.get(`${backendUrl}/${userId}`),
+        axios.get(`${backendUrl}/transactions/${userId}`),
       ]);
 
       setUser(userRes.data);

@@ -5,22 +5,23 @@ import { jwtDecode } from "jwt-decode";
 
 export const Signin = () =>{
     const [error,setError]=useState(false);
-    const userRef=useRef();
-    const emailRef=useRef();
-    const passwordRef=useRef();
+    const backendUrl=import.meta.env.BACKEND_URL;
+    const userRef=useRef<HTMLInputElement | null>(null);
+    const emailRef=useRef<HTMLInputElement | null>(null);
+    const passwordRef=useRef<HTMLInputElement | null>(null);
     const handleOnClick = async () =>{
        
         const username=userRef.current?.value;
         const email=emailRef.current?.value;
         const password=passwordRef.current?.value;
         try{
-            const response = await axios.post("http://localhost:3000/signin",{
+            const response = await axios.post(`${backendUrl}/signin`,{
             username,
             email,
             password
         })
         localStorage.setItem("token", response.data.token);
-        localStorage.setItem("username",username);
+        localStorage.setItem("username",username as string);
         
         
        
