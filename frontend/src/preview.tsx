@@ -1,8 +1,7 @@
-
 import { transform } from "@babel/standalone";
 
-type File = { name: string; code: string };
-type LangType = "react" | "vue" | "tailwind" | "html" | "java" | "unknown";
+export type File = { name: string; code: string };
+export type LangType = "react" | "vue" | "tailwind" | "html" | "java" | "unknown";
 
 function isImage(name: string) {
   return /\.(png|jpe?g|gif|svg|webp)$/i.test(name);
@@ -23,46 +22,38 @@ export function generateUniversalPreview(
   const css = get(".css");
   const js = get(".js");
   const html = get(".html");
-  const jsxFile = files.find(
-    f => f.name.endsWith(".jsx") || f.name.endsWith(".tsx")
-  );
 
   switch (detectedType) {
-    
-   
-    
-      case "vue": {
-        const vueFile = files.find(f => f.name.endsWith(".vue"));
-        let templateCode = "";
-        let scriptCode = "";
-        let styleCode = "";
-        
-        if (vueFile) {
-          const templateMatch = vueFile.code.match(/<template>([\s\S]*?)<\/template>/);
-          const scriptMatch = vueFile.code.match(/<script[^>]*>([\s\S]*?)<\/script>/);
-          const styleMatch = vueFile.code.match(/<style[^>]*>([\s\S]*?)<\/style>/);
-        
-          templateCode = templateMatch ? templateMatch[1].trim() : "";
-          scriptCode = scriptMatch ? scriptMatch[1].trim() : "";
-          styleCode = styleMatch ? styleMatch[1].trim() : "";
-        
-          if (/export\s+default/.test(scriptCode)) {
-            scriptCode = scriptCode.replace(/export\s+default/, "window.App = ");
-          } else if (vueFile.code.includes("<script setup")) {
-            return `<html><body><pre style="color:red;">⚠️ &lt;script setup&gt; is not supported in preview. Please use &lt;script&gt; with export default.</pre></body></html>`;
-          } else {
-            scriptCode = "window.App = {}";
-          }
-          
-          templateCode = templateCode.replace(/`/g, '\\`');
-          scriptCode += `;\nif(window.App){ window.App.template = \`${templateCode}\`; }`;
-        } else {
-          return `<html><body><pre style="color:red;">No .vue file found.</pre></body></html>`;
-        }
-        console.log("Script Code:", scriptCode);
+    case "vue": {
+      const vueFile = files.find(f => f.name.endsWith(".vue"));
+      if (!vueFile) {
+        return `<html><body><pre style="color:red;">No .vue file found.</pre></body></html>`;
+      }
 
+      let templateCode = "";
+      let scriptCode = "";
+      let styleCode = "";
 
-        return `
+      const templateMatch = vueFile.code.match(/<template>([\s\S]*?)<\/template>/);
+      const scriptMatch = vueFile.code.match(/<script[^>]*>([\s\S]*?)<\/script>/);
+      const styleMatch = vueFile.code.match(/<style[^>]*>([\s\S]*?)<\/style>/);
+
+      templateCode = templateMatch ? templateMatch[1].trim() : "";
+      scriptCode = scriptMatch ? scriptMatch[1].trim() : "";
+      styleCode = styleMatch ? styleMatch[1].trim() : "";
+
+      if (/export\s+default/.test(scriptCode)) {
+        scriptCode = scriptCode.replace(/export\s+default/, "window.App = ");
+      } else if (vueFile.code.includes("<script setup")) {
+        return `<html><body><pre style="color:red;">&lt;script setup&gt; is not supported in preview. Please use &lt;script&gt; with export default.</pre></body></html>`;
+      } else {
+        scriptCode = "window.App = {}";
+      }
+
+      templateCode = templateCode.replace(/`/g, "\\`");
+      scriptCode += `;\nif(window.App){ window.App.template = \`${templateCode}\`; }`;
+
+      return `
         <!DOCTYPE html>
         <html>
           <head>
@@ -73,30 +64,22 @@ export function generateUniversalPreview(
             <div id="app"></div>
             <script>
               (function(){
-                // Fallback for defineComponent-based exports
                 const defineComponent = (comp) => comp;
-        
                 ${scriptCode}
               })();
-        
+
               if (typeof window.App !== 'undefined') {
                 Vue.createApp(window.App).mount("#app");
               } else {
                 document.body.innerHTML = '<pre style="color:red;">App component not defined.</pre>';
               }
-            <\/script>
+            </script>
           </body>
         </html>
-        `;
-        
+      `;
     }
 
-    
-    
-    
-    
-    
-    case "tailwind": {
+    case "tailwind":
       return `
         <!DOCTYPE html>
         <html>
@@ -109,7 +92,6 @@ export function generateUniversalPreview(
             <script>${js}</script>
           </body>
         </html>`;
-    }
 
     case "html": {
       const imgTags = files
@@ -133,8 +115,7 @@ export function generateUniversalPreview(
     }
 
     case "java": {
-      const javaOutput =
-        files.find(f => f.name.endsWith(".java"))?.code || "No output";
+      const javaOutput = files.find(f => f.name.endsWith(".java"))?.code || "No output";
       return `
         <!DOCTYPE html>
         <html>
@@ -150,15 +131,13 @@ export function generateUniversalPreview(
   }
 }
 
-
-
-
 export function generateReactPreview(files: File[]): string {
   const jsxFile = files.find(f => f.name.endsWith(".tsx") || f.name.endsWith(".jsx"));
   const cssFile = files.find(f => f.name.endsWith(".css"));
   const css = cssFile?.code || "";
 
   if (!jsxFile) return "Missing React file";
+
   let userCode = jsxFile.code.replace(/^import\s.+;?\n?/gm, "");
   userCode = userCode.replace(/export\s+default\s+/gm, "const App = ");
   userCode = userCode.replace(/\b(useState|useEffect|useRef|useMemo|useCallback|useContext|useReducer|useLayoutEffect|useImperativeHandle|useTransition|useDeferredValue)\b/g, "React.$1");
@@ -192,14 +171,14 @@ export function generateReactPreview(files: File[]): string {
       } catch (e) {
         document.body.innerHTML = '<pre style="color:red;">' + e + '</pre>';
       }
-    </script> 
+    </script>
   </body>
 </html>
 `;
 }
 
 export function generatePythonPreview(code: string): string {
-  const escapedCode = code.replace(/`/g, '\\`');
+  const escapedCode = code.replace(/`/g, "\\`");
 
   return `
 <!DOCTYPE html>
@@ -225,9 +204,8 @@ export function generatePythonPreview(code: string): string {
         }
       }
       main();
-    <\/script>
+    </script>
   </body>
 </html>
 `;
 }
-

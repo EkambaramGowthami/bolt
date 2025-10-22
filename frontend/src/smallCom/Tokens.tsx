@@ -7,21 +7,14 @@ export const Tokens = ({ setgetToken }: any) => {
   const referredByRef = useRef<HTMLInputElement>(null);
   const userId = localStorage.getItem("userId");
   const backendUrl = import.meta.env.BACKEND_URL!;
-  const [user, setUser] = useState<any>(null);
   const [tokens, setTokens] = useState<any>(null);
-  const [transaction, setTransaction] = useState<any>([]);
 
   const fetchAllData = async () => {
     try {
-      const [userRes, tokenRes, transactionRes] = await Promise.all([
-        axios.get(`${backendUrl}/user/${userId}`),
+      const [tokenRes] = await Promise.all([
         axios.get(`${backendUrl}/${userId}`),
-        axios.get(`${backendUrl}/transactions/${userId}`),
       ]);
-
-      setUser(userRes.data);
       setTokens(tokenRes.data);
-      setTransaction(transactionRes.data);
     } catch (err) {
       console.error("Error fetching data:", err);
     }
@@ -39,8 +32,8 @@ export const Tokens = ({ setgetToken }: any) => {
     }
 
     if (referredBy) {
-      await axios.post(`http://localhost:3000/referral/${userId}`, {
-        referredBy
+      await axios.post(`${backendUrl}/referral/${userId}`, {
+        referredBy,
       });
     }
   };

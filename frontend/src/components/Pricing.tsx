@@ -20,7 +20,7 @@ export const Pricing = () => {
     const [seven,setSeven]=useState(false);
     const navigate = useNavigate ();
     const [username,setUsername]=useState<string | null>(null);
-    const handleCancel = (e) => {
+    const handleCancel = (e : any) => {
         e.preventDefault();
         navigate("/dashboard");
       };
