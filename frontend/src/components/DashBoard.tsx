@@ -74,7 +74,7 @@ export const Dashboard = () => {
               <div className="relative inline-block bg-black rounded-lg">
                 <input
                   type="text"
-                  className="w-[80vw] sm:w-[60vw] md:w-[40vw] lg:w-[30vw] h-[12vh] sm:h-[12vh] md:h-[14vh] px-4 md:px-6 lg:px-8 text-sm font-light rounded-lg text-white placeholder:text-xs bg-[#333333] bg-opacity-50 border border-[#333333]"
+                  className="w-[80vw] sm:w-[60vw] md:w-[40vw] lg:w-[30vw] h-[12vh] sm:h-[12vh] md:h-[14vh] px-4 md:px-6 lg:px-8 text-sm font-light rounded-lg text-white placeholder:text-xs bg-[#333333] bg-opacity-50 focus:outline-none border border-[#333333]"
                   placeholder="How can zentra help you....."
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}

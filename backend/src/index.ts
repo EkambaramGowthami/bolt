@@ -12,7 +12,7 @@ import redisClient from "./redisClient";
 config();
 const CLIENT_ID=process.env.CLIENT_ID!;
 const CLIENT_SECRET=process.env.CLIENT_SECRET!;
-const REDIRECT_URI="http://localhost:3000/api/auth/google/callback";
+const REDIRECT_URI="https://bolt-backend-o1vr.onrender.com/api/auth/google/callback";
 const SECRETE = (process.env.SECRETE || "defaultsecrete") as string;
 function extractExplanationAndRequirements(text: string) {
   const cleanedText = text.replace(/```[\s\S]*?```/g, "").trim();
