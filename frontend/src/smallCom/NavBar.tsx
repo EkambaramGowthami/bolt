@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom"
 
-export const NavBar = ({ setApp }: any) => {
+export default function NavBar({ setApp }: any){
   const navigate = useNavigate();
   const [username, setUsername] = useState<string | null>(null);
   useEffect(() => {

@@ -1,4 +1,4 @@
-export const Help = () => {
+export default function Help(){
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"

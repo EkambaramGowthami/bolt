@@ -1,7 +1,7 @@
 import { useState } from "react"
 import { ChevronDown, ChevronUp } from "lucide-react";
 import axios from "axios";
-export const Pro = ({ on }: any) => {
+export default function Pro({ on }: any){
     const [open, setOpen] = useState(false);
     const [item, setItem] = useState(["20","18"]);
     const [input,setInput]=useState("10M/month");

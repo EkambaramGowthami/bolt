@@ -1,15 +1,15 @@
 import { ChevronDown, ChevronUp, X } from "lucide-react"
-import { Profile } from "../symbols/Profile";
+import  Profile  from "../symbols/Profile";
 
 import { useEffect, useState } from "react";
 import { ToggleLeft, ToggleRight } from "lucide-react";
-import { Free } from "../card/Free";
-import { Pro } from "../card/Pro";
-import { Teams } from "../card/Teams";
+import  Free  from "../card/Free";
+import  Pro from "../card/Pro";
+import  Teams  from "../card/Teams";
 import { useNavigate } from "react-router-dom";
 
 
-export const Pricing = () => {
+export default function Pricing(){
     const [on, setOn] = useState(false);
     const [first,setFirst]=useState(false);
     const [second,setSecond]=useState(false);

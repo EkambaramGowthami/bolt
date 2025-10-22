@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState } from "react"
-import { NavBar } from "../smallCom/NavBar"
+import  NavBar  from "../smallCom/NavBar"
 import { useNavigate } from "react-router-dom"
-import { Spotlight } from "./ui/Spotlight";
+import  Spotlight  from "./ui/Spotlight";
 import { cn } from "./lib/utils"
-import { Community } from "../smallCom/Community";
+import  Community  from "../smallCom/Community";
 
 
 
-export const Dashboard = () => {
+export default function Dashboard(){
   const [prompt, setPrompt] = useState("");
   const [app, setApp] = useState(false);
   const appRef = useRef<HTMLDivElement>(null);

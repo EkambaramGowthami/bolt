@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import axios from "axios";
 import { useParams } from "react-router-dom";
-import { Send } from "../symbols/Send";
-import { MonacoViewer } from "../smallCom/MonacoViewer";
+import  Send  from "../symbols/Send";
+import  MonacoViewer  from "../smallCom/MonacoViewer";
 import { generatePythonPreview, generateReactPreview, generateUniversalPreview } from "../preview";
 import { Check, Copy } from "lucide-react";
 import { LoaderFive } from "./ui/loader";
@@ -25,7 +25,7 @@ type ResultType = {
   requirements?: string[];
 };
 
-export const SearchElement = () => {
+export default function SearchElement(){
   function extractOf(promptHistory: string[]): string[] {
     const fullPrompt = promptHistory.join("\n");
     const lowerPrompt = fullPrompt.toLowerCase();

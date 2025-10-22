@@ -2,7 +2,7 @@
 import { motion } from "motion/react";
 
 
-export const LoaderOne = () => {
+export default function LoaderOne(){
   const transition = (x: number) => {
     return {
       duration: 1,

@@ -2,7 +2,7 @@ import axios from "axios";
 import { useRef, useState } from "react";
 
 
-export const Signin = () =>{
+export default function Signin(){
     const [error,setError]=useState(false);
     const backendUrl=import.meta.env.BACKEND_URL;
     const userRef=useRef<HTMLInputElement | null>(null);

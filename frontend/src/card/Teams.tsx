@@ -1,7 +1,7 @@
 import { useState } from "react"
 import { ChevronDown, ChevronUp } from "lucide-react";
 import axios from "axios";
-export const Teams = ({ on }: any) => {
+export default function Teams({ on }: any){
     const [open, setOpen] = useState(false);
     const [item, setItem] = useState(["30","27"]);
     const [input,setInput]=useState("10M/month");

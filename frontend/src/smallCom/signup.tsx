@@ -2,7 +2,7 @@ import axios from "axios";
 import { useRef } from "react"
 import { useNavigate } from "react-router-dom";
 
-export const Signup = () =>{
+export default function Signup(){
 
   const GOOGLE_CLIENT_ID=import.meta.env.GOOGLE_CLIENT_ID!
   const backendUrl=import.meta.env.BACKEND_URL!;

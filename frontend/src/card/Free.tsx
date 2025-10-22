@@ -1,4 +1,4 @@
-export const Free = () =>{
+export default function Free(){
     return (
         <div className="md:w-1/3 sm:w-full h-[500px] shadow-2xl border border-gray-700 rounded-lg mr-4">
             <div className="p-8">

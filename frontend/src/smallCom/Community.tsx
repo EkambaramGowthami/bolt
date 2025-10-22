@@ -1,11 +1,11 @@
-import { Discord } from "../symbols/Discord"
-import { Insta } from "../symbols/Inta"
-import { LinkedIn } from "../symbols/LinkedIn"
-import { Reddit } from "../symbols/Reddit"
-import { Twitter } from "../symbols/Twitter"
-import { Youtube } from "../symbols/Youtube"
+import  Discord from "../symbols/Discord"
+import  Insta  from "../symbols/Inta"
+import  LinkedIn  from "../symbols/LinkedIn"
+import  Reddit  from "../symbols/Reddit"
+import  Twitter  from "../symbols/Twitter"
+import  Youtube  from "../symbols/Youtube"
 
-export const Community = () => {
+export default function Community(){
     return (
         <div className="bg-[#333333] bg-opacity-50 shadow-xl text-white font-normal text-md flex gap-4 p-4 rounded-xl">
             <div className="space-y-2 items-center">

@@ -1,10 +1,10 @@
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import './App.css'
-import { Dashboard } from './components/DashBoard'
-import { SearchElement } from './components/SearchElement'
-import { Pricing } from './components/Pricing'
-import { Signup } from './smallCom/signup'
-import { Signin } from './smallCom/Signin'
+import  Dashboard  from './components/DashBoard'
+import  SearchElement  from './components/SearchElement'
+import  Pricing  from './components/Pricing'
+import  Signup from './smallCom/signup'
+import  Signin  from './smallCom/Signin'
 
 function App() {
   

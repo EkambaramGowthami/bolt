@@ -4,7 +4,7 @@ interface typeCode {
   code:string,
   language:string
 }
-export const MonacoViewer = ({ code, language }:typeCode) => {
+export default function MonacoViewer({ code, language }:typeCode){
   return (
     <Editor
       height="500px"

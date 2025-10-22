@@ -1,9 +1,9 @@
 import axios from "axios";
 import { useEffect, useRef, useState } from "react";
 import { Bolt, Gift, X } from "lucide-react";
-import { Group } from "../symbols/Goup";
+import  Group  from "../symbols/Goup";
 
-export const Tokens = ({ setgetToken }: any) => {
+export default function Tokens({ setgetToken }: any){
   const referredByRef = useRef<HTMLInputElement>(null);
   const userId = localStorage.getItem("userId");
   const backendUrl = import.meta.env.BACKEND_URL!;
